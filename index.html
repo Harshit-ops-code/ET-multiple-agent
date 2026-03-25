@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ET-AI · Content Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:        #0a0a0f;
+    --surface:   #12121a;
+    --surface2:  #1a1a26;
+    --border:    #2a2a3d;
+    --accent:    #7c6dfa;
+    --accent2:   #fa6d8f;
+    --gold:      #f0c060;
+    --text:      #e8e8f0;
+    --muted:     #7a7a9a;
+    --success:   #4ade80;
+    --radius:    12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Instrument Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,109,250,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,109,250,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width: 500px; height: 500px; background: rgba(124,109,250,0.08); top: -100px; left: -100px; }
+  .orb2 { width: 400px; height: 400px; background: rgba(250,109,143,0.06); bottom: -80px; right: -80px; }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 32px 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-mark {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: -0.3px;
+  }
+  .logo-text span { color: var(--accent); }
+
+  .phase-badge {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(124,109,250,0.12);
+    border: 1px solid rgba(124,109,250,0.25);
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  /* MAIN LAYOUT */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 24px;
+    padding: 28px 0 40px;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  /* PANEL */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-header .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .panel-header h2 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* FORM */
+  .form-body { padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: none;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,109,250,0.12);
+  }
+
+  textarea { min-height: 90px; line-height: 1.5; }
+
+  select option { background: var(--surface2); }
+
+  /* Range slider */
+  .range-wrap { display: flex; align-items: center; gap: 12px; }
+  input[type=range] {
+    flex: 1; padding: 0;
+    accent-color: var(--accent);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+  input[type=range]:focus { box-shadow: none; border: none; }
+  .range-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    min-width: 60px;
+    text-align: right;
+  }
+
+  /* Button */
+  .btn-generate {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, var(--accent), #9b8dff);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-generate:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+  .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* OUTPUT PANEL */
+  .output-panel { position: sticky; top: 24px; }
+
+  /* Empty state */
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .empty-icon {
+    width: 56px; height: 56px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 4px;
+  }
+
+  .empty-state h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--text);
+  }
+
+  .empty-state p {
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 240px;
+    line-height: 1.6;
+  }
+
+  /* Result */
+  #result { display: none; padding: 20px; }
+
+  .meta-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .meta-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .meta-chip.time  { color: var(--gold);    border-color: rgba(240,192,96,0.3);  background: rgba(240,192,96,0.08); }
+  .meta-chip.kw    { color: var(--success); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+  .meta-chip.phase { color: var(--accent);  border-color: rgba(124,109,250,0.3); background: rgba(124,109,250,0.08); }
+
+  .blog-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    line-height: 1.3;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .blog-meta-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 20px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  .blog-content {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #c8c8e0;
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+
+  .blog-content::-webkit-scrollbar { width: 4px; }
+  .blog-content::-webkit-scrollbar-track { background: transparent; }
+  .blog-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* Markdown rendering */
+  .blog-content h1, .blog-content h2 {
+    font-family: 'DM Serif Display', serif;
+    color: var(--text);
+    margin: 20px 0 8px;
+  }
+  .blog-content h1 { font-size: 20px; }
+  .blog-content h2 { font-size: 17px; }
+  .blog-content h3 { font-size: 15px; font-weight: 600; color: var(--text); margin: 16px 0 6px; }
+  .blog-content p  { margin-bottom: 12px; }
+  .blog-content strong { color: var(--text); font-weight: 600; }
+  .blog-content em { color: var(--gold); font-style: italic; }
+  .blog-content ul, .blog-content ol { padding-left: 20px; margin-bottom: 12px; }
+  .blog-content li { margin-bottom: 5px; }
+  .blog-content code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent2);
+  }
+  .blog-content blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 14px;
+    margin: 12px 0;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .keywords-row {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .kw-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    margin-right: 2px;
+  }
+  .kw-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.2);
+    color: var(--success);
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+
+  .copy-btn {
+    margin-top: 16px;
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Error */
+  .error-box {
+    margin: 20px;
+    padding: 14px 16px;
+    background: rgba(250,109,143,0.08);
+    border: 1px solid rgba(250,109,143,0.25);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--accent2);
+    display: none;
+  }
+
+  /* Loading overlay inside output */
+  .loading-overlay {
+    padding: 60px 20px;
+    text-align: center;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .loading-dots {
+    display: flex; gap: 6px;
+  }
+  .loading-dots span {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%,100%{opacity:0.2;transform:scale(0.8)} 50%{opacity:1;transform:scale(1)} }
+
+  .loading-overlay p {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .loading-overlay strong {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    color: var(--text);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+    display: inline-block;
+    margin-right: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-mark">ET</div>
+    <div class="logo-text">ET<span>-AI</span> Content Engine</div>
+    <div class="phase-badge">PHASE 1 · BLOG WRITER</div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="main-grid">
+
+    <!-- INPUT PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="dot"></div>
+        <h2>Content Parameters</h2>
+      </div>
+      <div class="form-body">
+
+        <div>
+          <label for="topic">Blog Topic *</label>
+          <textarea id="topic" rows="3" placeholder="e.g. Why most startups fail at content marketing"></textarea>
+        </div>
+
+        <div>
+          <label for="audience">Target Audience</label>
+          <input id="audience" type="text" placeholder="e.g. startup founders, B2B marketers"/>
+        </div>
+
+        <div>
+          <label for="context">Additional Context</label>
+          <textarea id="context" rows="2" placeholder="Any specific angle, data, or tone to include..."></textarea>
+        </div>
+
+        <div>
+          <label for="length">Word Count</label>
+          <div class="range-wrap">
+            <input type="range" id="length" min="300" max="2000" step="100" value="1000"
+              oninput="document.getElementById('length-val').textContent = this.value + ' words'"/>
+            <span class="range-val" id="length-val">1000 words</span>
+          </div>
+        </div>
+
+        <button class="btn-generate" id="gen-btn" onclick="generateBlog()">
+          <div class="spinner" id="spinner"></div>
+          <span id="btn-text">✦ Generate Blog</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- OUTPUT PANEL -->
+    <div class="panel output-panel">
+      <div class="panel-header">
+        <div class="dot" style="background:var(--accent2);box-shadow:0 0 8px var(--accent2)"></div>
+        <h2>Generated Content</h2>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">✦</div>
+        <h3>Ready to write</h3>
+        <p>Fill in your topic and parameters, then hit Generate to create your blog post.</p>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <div>
+          <strong>Writing your blog...</strong>
+          <p>Groq · LLaMA 3.3 · LangChain</p>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="error-box"></div>
+
+      <!-- Result -->
+      <div id="result">
+        <div class="meta-strip" id="meta-strip"></div>
+        <div class="blog-title" id="blog-title"></div>
+        <div class="blog-meta-desc" id="blog-meta-desc"></div>
+        <div class="divider"></div>
+        <div class="blog-content" id="blog-content"></div>
+        <div class="keywords-row" id="keywords-row"></div>
+        <div id="sources-section" style="margin-top:16px;display:none">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;
+              color:#7a7a9a;margin-bottom:8px;">Sources used</div>
+          <div id="sources-list"></div>
+        </div>
+        <button class="copy-btn" onclick="copyContent()">⎘ Copy full blog as Markdown</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span><span class="status-dot"></span>Backend: localhost:5000</span>
+    <span>·</span>
+    <span>Model: llama-3.3-70b-versatile</span>
+    <span>·</span>
+    <span id="gen-count">0 blogs generated this session</span>
+  </footer>
+
+</div>
+
+<script>
+let genCount = 0;
+let lastRaw = '';
+
+async function generateBlog() {
+  const topic = document.getElementById('topic').value.trim();
+  if (!topic) {
+    alert('Please enter a topic first.');
+    return;
+  }
+
+  const btn     = document.getElementById('gen-btn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btn-text');
+
+  // UI: loading state
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  btnText.textContent = 'Generating...';
+
+  document.getElementById('empty-state').style.display   = 'none';
+  document.getElementById('result').style.display        = 'none';
+  document.getElementById('error-box').style.display     = 'none';
+  document.getElementById('loading-overlay').style.display = 'flex';
+
+  try {
+    const res = await fetch('http://localhost:5000/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic:    topic,
+        audience: document.getElementById('audience').value || 'general professional audience',
+        length:   parseInt(document.getElementById('length').value),
+        context:  document.getElementById('context').value,
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      showError(data.error || 'Something went wrong. Is your backend running?');
+      return;
+    }
+
+    renderResult(data);
+
+  } catch (e) {
+    showError('Cannot reach backend. Run: python api_server.py');
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = '✦ Generate Blog';
+    document.getElementById('loading-overlay').style.display = 'none';
+  }
+}
+
+function renderResult(data) {
+
+  // Sources
+const sourcesSection = document.getElementById('sources-section');
+const sourcesList = document.getElementById('sources-list');
+if (data.sources && data.sources.length) {
+    sourcesList.innerHTML = data.sources.map(s => `
+        <a href="${s.url}" target="_blank" style="
+            display:block; padding:8px 12px; margin-bottom:6px;
+            background:rgba(124,109,250,0.06); border:1px solid rgba(124,109,250,0.15);
+            border-radius:6px; text-decoration:none; color:#c8c8e0; font-size:12px;
+        ">
+            <div style="font-weight:600;color:#e8e8f0;margin-bottom:2px">${s.title}</div>
+            <div style="color:#7a7a9a;font-size:11px">${s.url}</div>
+        </a>
+    `).join('');
+    sourcesSection.style.display = 'block';
+}
+
+  lastRaw = data.content || '';
+
+  // Meta chips
+  const metaStrip = document.getElementById('meta-strip');
+  metaStrip.innerHTML = '';
+  if (data.reading_time) {
+    metaStrip.innerHTML += `<span class="meta-chip time">⏱ ${data.reading_time}</span>`;
+  }
+  metaStrip.innerHTML += `<span class="meta-chip phase">✦ Blog Writer Agent</span>`;
+
+  // Title
+  document.getElementById('blog-title').textContent = data.title || 'Generated Blog';
+
+  // Meta desc
+  const metaEl = document.getElementById('blog-meta-desc');
+  if (data.meta_description) {
+    metaEl.textContent = data.meta_description;
+    metaEl.style.display = 'block';
+  } else {
+    metaEl.style.display = 'none';
+  }
+
+  // Content (basic markdown → HTML)
+  document.getElementById('blog-content').innerHTML = markdownToHtml(data.content || '');
+
+  // Keywords
+  const kwRow = document.getElementById('keywords-row');
+  kwRow.innerHTML = '';
+  if (data.seo_keywords && data.seo_keywords.length) {
+    kwRow.innerHTML = '<span class="kw-label">SEO</span>';
+    data.seo_keywords.forEach(k => {
+      kwRow.innerHTML += `<span class="kw-tag">${k}</span>`;
+    });
+  }
+
+  document.getElementById('result').style.display = 'block';
+
+  genCount++;
+  document.getElementById('gen-count').textContent = `${genCount} blog${genCount > 1 ? 's' : ''} generated this session`;
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-box');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+  document.getElementById('empty-state').style.display = 'flex';
+}
+
+function markdownToHtml(md) {
+  return md
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+    .replace(/^\* (.+)$/gm, '<li>$1</li>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hublp])/gm, '<p>')
+    .replace(/(?<![>])$/gm, '</p>')
+    .replace(/<p><\/p>/g, '')
+    .replace(/<p>(<h[1-3]>)/g, '$1')
+    .replace(/(<\/h[1-3]>)<\/p>/g, '$1');
+}
+
+function copyContent() {
+  if (!lastRaw) return;
+  navigator.clipboard.writeText(lastRaw).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = '⎘ Copy full blog as Markdown', 2000);
+  });
+}
+
+// Allow Ctrl+Enter to generate
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') generateBlog();
+});
+</script>
+</body>
+</html>
