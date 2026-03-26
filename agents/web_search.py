@@ -1,81 +1,86 @@
 from tavily import TavilyClient
-from config import TAVILY_API_KEY
-from datetime import datetime
+from newsapi import NewsApiClient
+from config import TAVILY_API_KEY, NEWSAPI_KEY
+from datetime import datetime, timedelta
 
 
 class WebSearchAgent:
     """
-    Fetches live, current web articles about a topic.
-    Returns a clean context string ready to inject into the blog prompt.
+    Multi-source search: Tavily (deep web) + NewsAPI (live headlines).
+    Only used in NEWS mode — product mode skips this.
     """
 
     def __init__(self):
-        self.client = TavilyClient(api_key=TAVILY_API_KEY)
+        self.tavily  = TavilyClient(api_key=TAVILY_API_KEY)
+        self.newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
 
     def search(self, topic: str, max_results: int = 5) -> dict:
-        """
-        Search the web for the topic and return structured results.
-        """
         print(f"\n[WebSearchAgent] Searching: '{topic}'")
 
-        response = self.client.search(
-            query=topic,
-            search_depth="advanced",     # deeper = better quality
-            max_results=max_results,
-            include_answer=True,          # Tavily gives a short AI summary too
-            include_raw_content=False,
-        )
+        tavily_data  = self._search_tavily(topic, max_results)
+        newsapi_data = self._search_newsapi(topic)
 
-        sources = []
-        for r in response.get("results", []):
-            sources.append({
+        # Merge and deduplicate by URL
+        all_sources = {s["url"]: s for s in tavily_data + newsapi_data}
+        sources = list(all_sources.values())[:8]
+
+        context = self._build_context(topic, sources)
+        print(f"[WebSearchAgent] Found {len(sources)} sources total")
+        return {"context": context, "sources": sources}
+
+    def _search_tavily(self, topic: str, max_results: int) -> list:
+        try:
+            res = self.tavily.search(
+                query=topic,
+                search_depth="advanced",
+                max_results=max_results,
+                include_answer=True,
+            )
+            return [{
                 "title":   r.get("title", ""),
                 "url":     r.get("url", ""),
-                "content": r.get("content", "")[:600],  # cap per source
+                "content": r.get("content", "")[:500],
+                "source":  "Tavily",
                 "score":   r.get("score", 0),
-            })
+            } for r in res.get("results", [])]
+        except Exception as e:
+            print(f"[WebSearchAgent] Tavily error: {e}")
+            return []
 
-        # Sort by relevance score
-        sources.sort(key=lambda x: x["score"], reverse=True)
+    def _search_newsapi(self, topic: str) -> list:
+        try:
+            from_date = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+            res = self.newsapi.get_everything(
+                q=topic,
+                from_param=from_date,
+                language="en",
+                sort_by="relevancy",
+                page_size=5,
+            )
+            return [{
+                "title":   a.get("title", ""),
+                "url":     a.get("url", ""),
+                "content": (a.get("description") or "")[:500],
+                "source":  a.get("source", {}).get("name", "NewsAPI"),
+                "score":   0.8,
+            } for a in res.get("articles", []) if a.get("title")]
+        except Exception as e:
+            print(f"[WebSearchAgent] NewsAPI error: {e}")
+            return []
 
-        context = self._build_context(topic, sources, response.get("answer", ""))
-
-        print(f"[WebSearchAgent] Found {len(sources)} sources")
-        return {
-            "context":       context,
-            "sources":       sources,
-            "tavily_answer": response.get("answer", ""),
-        }
-
-    def _build_context(self, topic: str, sources: list, tavily_answer: str) -> str:
+    def _build_context(self, topic: str, sources: list) -> str:
         today = datetime.now().strftime("%B %d, %Y")
-
-        context_parts = [
-            f"=== CURRENT WORLD CONTEXT (as of {today}) ===",
-            f"Topic: {topic}",
-            "",
+        lines = [
+            f"=== LIVE WEB CONTEXT (as of {today}) ===",
+            f"Topic: {topic}", "",
+            "RECENT SOURCES:",
         ]
-
-        if tavily_answer:
-            context_parts += [
-                "QUICK SUMMARY FROM LIVE SOURCES:",
-                tavily_answer,
-                "",
+        for i, s in enumerate(sources, 1):
+            lines += [
+                f"\n[{i}] {s['title']} — via {s['source']}",
+                f"URL: {s['url']}",
+                s["content"],
             ]
-
-        context_parts.append("RECENT ARTICLES AND FINDINGS:")
-        for i, src in enumerate(sources, 1):
-            context_parts += [
-                f"\n[Source {i}] {src['title']}",
-                f"URL: {src['url']}",
-                f"{src['content']}",
-            ]
-
-        context_parts += [
-            "",
-            "=== END CONTEXT ===",
-            "Use the above real-world context to make the blog accurate,",
-            "current, and grounded. Cite sources naturally in the text.",
-        ]
-
-        return "\n".join(context_parts)
+        lines += ["", "=== END CONTEXT ===",
+                  "Cite sources naturally. Write as if today is " + today + "."]
+        return "\n".join(lines)
