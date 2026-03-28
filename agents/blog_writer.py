@@ -61,7 +61,6 @@ class BlogWriterAgent:
 
         print(f"[BlogWriterAgent] Done. Title: {parsed.get('title', 'Untitled')}")
         return parsed
-   
 
     def _parse_output(self, raw: str) -> dict:
         """
@@ -70,9 +69,9 @@ class BlogWriterAgent:
         """
         result = {"raw": raw, "content": raw}
 
-        title_match = re.search(r"TITLE:\s*(.+)", raw)
-        meta_match = re.search(r"META_DESCRIPTION:\s*(.+)", raw)
-        time_match = re.search(r"READING_TIME:\s*(.+)", raw)
+        title_match    = re.search(r"TITLE:\s*(.+)", raw)
+        meta_match     = re.search(r"META_DESCRIPTION:\s*(.+)", raw)
+        time_match     = re.search(r"READING_TIME:\s*(.+)", raw)
         keywords_match = re.search(r"SEO_KEYWORDS:\s*(.+)", raw)
 
         if title_match:
@@ -89,9 +88,36 @@ class BlogWriterAgent:
         # Extract main Markdown content (between the --- separators)
         parts = raw.split("---")
         if len(parts) >= 3:
-            result["content"] = parts[2].strip()
+            content = parts[2].strip()
+            result["content"] = self._clean_links(content)   # ← called here
+        else:
+            # Fallback — clean the whole raw output if no separators found
+            result["content"] = self._clean_links(raw)
 
         return result
+
+    def _clean_links(self, content: str) -> str:
+        """
+        Keep max 3 markdown links. Convert the rest to plain text.
+        e.g. [Daily Mail](https://...) → Daily Mail
+        """
+        import re
+        links_found = re.findall(r'\[([^\]]+)\]\(https?://[^\)]+\)', content)
+
+        if len(links_found) <= 3:
+            return content  # already fine, nothing to clean
+
+        count = 0
+
+        def replace_link(match):
+            nonlocal count
+            count += 1
+            if count <= 3:
+                return match.group(0)   # keep first 3 as full links
+            return match.group(1)       # strip URL, keep anchor text only
+
+        cleaned = re.sub(r'\[([^\]]+)\]\(https?://[^\)]+\)', replace_link, content)
+        return cleaned
 
     def _save_blog(self, parsed: dict, topic: str):
         """Save the blog to disk as a markdown file."""
@@ -105,4 +131,4 @@ class BlogWriterAgent:
                 f.write(f"> {parsed['meta_description']}\n\n")
             f.write(parsed.get("content", parsed["raw"]))
 
-        print(f"[BlogWriterAgent] Saved to: {filename}")
+        print(f"[BlogWriterAgent] Saved to: {filename}")

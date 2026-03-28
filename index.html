@@ -1,381 +1,1932 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ET-AI · Content Engine</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
-<style>
-:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3d;--accent:#7c6dfa;--accent2:#fa6d8f;--gold:#f0c060;--teal:#2dd4bf;--text:#e8e8f0;--muted:#7a7a9a;--success:#4ade80;--danger:#f87171;--radius:12px}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Instrument Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,109,250,.03)1px,transparent 1px),linear-gradient(90deg,rgba(124,109,250,.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
-.orb1{width:500px;height:500px;background:rgba(124,109,250,.08);top:-100px;left:-100px}
-.orb2{width:400px;height:400px;background:rgba(250,109,143,.06);bottom:-80px;right:-80px}
-.wrapper{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 24px}
-header{padding:28px 0 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)}
-.logo-mark{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:#fff;flex-shrink:0}
-.logo-text{font-family:'DM Serif Display',serif;font-size:20px}
-.logo-text span{color:var(--accent)}
-.phase-badge{margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);background:rgba(124,109,250,.12);border:1px solid rgba(124,109,250,.25);padding:4px 10px;border-radius:20px;letter-spacing:.5px}
-.main-grid{display:grid;grid-template-columns:400px 1fr;gap:20px;padding:24px 0 40px;align-items:start}
-@media(max-width:880px){.main-grid{grid-template-columns:1fr}}
-.mode-switch{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:18px;gap:4px}
-.mode-btn{flex:1;padding:9px 8px;border:none;border-radius:7px;font-family:'Instrument Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted)}
-.mode-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.4)}
-.mode-btn.active.news{color:var(--gold);border:1px solid rgba(240,192,96,.2)}
-.mode-btn.active.product{color:var(--teal);border:1px solid rgba(45,212,191,.2)}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.panel-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 7px var(--accent)}
-.panel-header h2{font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
-.form-body{padding:18px;display:flex;flex-direction:column;gap:16px}
-label{display:block;font-size:11px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-input,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Instrument Sans',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .2s,box-shadow .2s;resize:none}
-input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,109,250,.12)}
-textarea{min-height:72px;line-height:1.5}
-.product-fields{display:none;flex-direction:column;gap:14px}
-.product-fields.show{display:flex}
-.field-divider{height:1px;background:var(--border)}
-.range-wrap{display:flex;align-items:center;gap:10px}
-input[type=range]{flex:1;padding:0;accent-color:var(--accent);background:transparent;border:none;box-shadow:none}
-input[type=range]:focus{box-shadow:none;border:none}
-.range-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);min-width:55px;text-align:right}
-.btn-generate{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#9b8dff);border:none;border-radius:8px;color:#fff;font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:8px}
-.btn-generate:hover:not(:disabled){opacity:.88;transform:translateY(-1px)}
-.btn-generate:disabled{opacity:.45;cursor:not-allowed;transform:none}
-.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
-@keyframes spin{to{transform:rotate(360deg)}}
-.output-panel{position:sticky;top:20px}
-.empty-state{padding:50px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
-.empty-icon{width:50px;height:50px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:4px}
-.empty-state h3{font-family:'DM Serif Display',serif;font-size:17px}
-.empty-state p{font-size:12px;color:var(--muted);max-width:220px;line-height:1.6}
-.quality-bar-wrap{margin:0 18px 14px;padding:12px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);display:none}
-.quality-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.quality-label{font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
-.quality-score{font-family:'DM Mono',monospace;font-size:14px;font-weight:500}
-.quality-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
-.quality-fill{height:100%;border-radius:3px;transition:width .6s ease,background .4s}
-.quality-issues{margin-top:7px;font-size:11px;color:var(--danger);line-height:1.5}
-.feedback-bar{margin:0 18px 14px;padding:14px;background:rgba(124,109,250,.06);border:1px solid rgba(124,109,250,.18);border-radius:8px;display:none}
-.feedback-bar h4{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:10px;letter-spacing:.4px;text-transform:uppercase}
-.feedback-bar textarea{min-height:60px;font-size:12px;margin-bottom:10px}
-.feedback-actions{display:flex;gap:8px}
-.btn-approve{flex:1;padding:9px;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);border-radius:7px;color:var(--success);font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}
-.btn-approve:hover{background:rgba(74,222,128,.2)}
-.btn-regen{flex:1;padding:9px;background:rgba(250,109,143,.1);border:1px solid rgba(250,109,143,.25);border-radius:7px;color:var(--accent2);font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}
-.btn-regen:hover{background:rgba(250,109,143,.18)}
-.iter-badge{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:center;margin-top:7px}
-#result{display:none;padding:16px 18px}
-.meta-strip{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
-.meta-chip{font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid}
-.meta-chip.time{color:var(--gold);border-color:rgba(240,192,96,.3);background:rgba(240,192,96,.08)}
-.meta-chip.mode-news{color:var(--gold);border-color:rgba(240,192,96,.3);background:rgba(240,192,96,.08)}
-.meta-chip.mode-product{color:var(--teal);border-color:rgba(45,212,191,.3);background:rgba(45,212,191,.08)}
-.meta-chip.phase{color:var(--accent);border-color:rgba(124,109,250,.3);background:rgba(124,109,250,.08)}
-.blog-title{font-family:'DM Serif Display',serif;font-size:24px;line-height:1.3;margin-bottom:8px}
-.blog-meta-desc{font-size:12px;color:var(--muted);line-height:1.6;padding:10px 12px;background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;margin-bottom:16px}
-.divider{height:1px;background:var(--border);margin:14px 0}
-.blog-content{font-size:13px;line-height:1.8;color:#c8c8e0;max-height:460px;overflow-y:auto;padding-right:4px}
-.blog-content::-webkit-scrollbar{width:3px}
-.blog-content::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-.blog-content h1,.blog-content h2{font-family:'DM Serif Display',serif;color:var(--text);margin:18px 0 7px}
-.blog-content h1{font-size:18px}.blog-content h2{font-size:16px}
-.blog-content h3{font-size:14px;font-weight:600;color:var(--text);margin:14px 0 5px}
-.blog-content p{margin-bottom:10px}
-.blog-content strong{color:var(--text);font-weight:600}
-.blog-content em{color:var(--gold);font-style:italic}
-.blog-content ul,.blog-content ol{padding-left:18px;margin-bottom:10px}
-.blog-content li{margin-bottom:4px}
-.blog-content code{font-family:'DM Mono',monospace;font-size:11px;background:var(--surface2);padding:2px 5px;border-radius:4px;color:var(--accent2)}
-.blog-content blockquote{border-left:3px solid var(--accent);padding-left:12px;margin:10px 0;color:var(--muted);font-style:italic}
-.cta-box{margin-top:12px;padding:10px 14px;background:rgba(45,212,191,.07);border:1px solid rgba(45,212,191,.2);border-radius:8px;font-size:12px;color:var(--teal);display:none}
-.cta-box strong{display:block;margin-bottom:3px;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
-.keywords-row{margin-top:14px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
-.kw-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-right:2px}
-.kw-tag{font-family:'DM Mono',monospace;font-size:10px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:var(--success);padding:3px 8px;border-radius:20px}
-.sources-section{margin-top:14px;display:none}
-.sources-label{font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
-.source-link{display:block;padding:7px 10px;margin-bottom:5px;background:rgba(124,109,250,.06);border:1px solid rgba(124,109,250,.12);border-radius:6px;text-decoration:none;color:var(--text);font-size:11px;transition:border-color .15s}
-.source-link:hover{border-color:rgba(124,109,250,.3)}
-.source-link-title{font-weight:600;color:#e8e8f0;margin-bottom:2px}
-.source-link-url{color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.copy-btn{margin-top:14px;width:100%;padding:9px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'Instrument Sans',sans-serif;font-size:12px;cursor:pointer;transition:border-color .2s,color .2s}
-.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
-.error-box{margin:16px;padding:12px 14px;background:rgba(250,109,143,.08);border:1px solid rgba(250,109,143,.25);border-radius:8px;font-size:12px;color:var(--accent2);display:none}
-.loading-overlay{padding:50px 20px;text-align:center;display:none;flex-direction:column;align-items:center;gap:14px}
-.loading-dots{display:flex;gap:5px}
-.loading-dots span{width:7px;height:7px;background:var(--accent);border-radius:50%;animation:pulse 1.2s ease-in-out infinite}
-.loading-dots span:nth-child(2){animation-delay:.2s}
-.loading-dots span:nth-child(3){animation-delay:.4s}
-@keyframes pulse{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
-.loading-overlay p{font-size:12px;color:var(--muted)}
-.loading-overlay strong{font-family:'DM Serif Display',serif;font-size:15px;color:var(--text);display:block;margin-bottom:3px}
-.approved-banner{margin:0 18px 14px;padding:10px 14px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:8px;font-size:13px;color:var(--success);font-weight:600;display:none;text-align:center}
-footer{border-top:1px solid var(--border);padding:16px 0;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:14px}
-.status-dot{width:5px;height:5px;border-radius:50%;background:var(--success);box-shadow:0 0 5px var(--success);display:inline-block;margin-right:5px}
-</style>
-</head>
-<body>
-<div class="orb orb1"></div>
-<div class="orb orb2"></div>
-<div class="wrapper">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ET-AI · Content Engine</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0a0f;
+        --surface: #12121a;
+        --surface2: #1a1a26;
+        --border: #2a2a3d;
+        --accent: #7c6dfa;
+        --accent2: #fa6d8f;
+        --gold: #f0c060;
+        --teal: #2dd4bf;
+        --text: #e8e8f0;
+        --muted: #7a7a9a;
+        --success: #4ade80;
+        --danger: #f87171;
+        --radius: 12px;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Instrument Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(124, 109, 250, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124, 109, 250, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+      .orb {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(120px);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .orb1 {
+        width: 500px;
+        height: 500px;
+        background: rgba(124, 109, 250, 0.08);
+        top: -100px;
+        left: -100px;
+      }
+      .orb2 {
+        width: 400px;
+        height: 400px;
+        background: rgba(250, 109, 143, 0.06);
+        bottom: -80px;
+        right: -80px;
+      }
+      .wrapper {
+        position: relative;
+        z-index: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      header {
+        padding: 28px 0 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .logo-mark {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "DM Mono", monospace;
+        font-size: 12px;
+        font-weight: 500;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .logo-text {
+        font-family: "DM Serif Display", serif;
+        font-size: 20px;
+      }
+      .logo-text span {
+        color: var(--accent);
+      }
+      .phase-badge {
+        margin-left: auto;
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        color: var(--accent);
+        background: rgba(124, 109, 250, 0.12);
+        border: 1px solid rgba(124, 109, 250, 0.25);
+        padding: 4px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.5px;
+      }
+      .main-grid {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 20px;
+        padding: 24px 0 40px;
+        align-items: start;
+      }
+      @media (max-width: 880px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .mode-switch {
+        display: flex;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 4px;
+        margin-bottom: 18px;
+        gap: 4px;
+      }
+      .mode-btn {
+        flex: 1;
+        padding: 9px 8px;
+        border: none;
+        border-radius: 7px;
+        font-family: "Instrument Sans", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: transparent;
+        color: var(--muted);
+      }
+      .mode-btn.active {
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      }
+      .mode-btn.active.news {
+        color: var(--gold);
+        border: 1px solid rgba(240, 192, 96, 0.2);
+      }
+      .mode-btn.active.product {
+        color: var(--teal);
+        border: 1px solid rgba(45, 212, 191, 0.2);
+      }
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .panel-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 7px var(--accent);
+      }
+      .panel-header h2 {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .form-body {
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: "Instrument Sans", sans-serif;
+        font-size: 13px;
+        padding: 9px 12px;
+        outline: none;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+        resize: none;
+      }
+      input:focus,
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(124, 109, 250, 0.12);
+      }
+      textarea {
+        min-height: 72px;
+        line-height: 1.5;
+      }
+      .product-fields {
+        display: none;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .product-fields.show {
+        display: flex;
+      }
+      .field-divider {
+        height: 1px;
+        background: var(--border);
+      }
+      .range-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      input[type="range"] {
+        flex: 1;
+        padding: 0;
+        accent-color: var(--accent);
+        background: transparent;
+        border: none;
+        box-shadow: none;
+      }
+      input[type="range"]:focus {
+        box-shadow: none;
+        border: none;
+      }
+      .range-val {
+        font-family: "DM Mono", monospace;
+        font-size: 12px;
+        color: var(--accent);
+        min-width: 55px;
+        text-align: right;
+      }
+      .btn-generate {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, var(--accent), #9b8dff);
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-family: "Instrument Sans", sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          opacity 0.2s,
+          transform 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .btn-generate:hover:not(:disabled) {
+        opacity: 0.88;
+        transform: translateY(-1px);
+      }
+      .btn-generate:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .spinner {
+        width: 15px;
+        height: 15px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: none;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .output-panel {
+        position: sticky;
+        top: 20px;
+      }
+      .empty-state {
+        padding: 50px 20px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .empty-icon {
+        width: 50px;
+        height: 50px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-bottom: 4px;
+      }
+      .empty-state h3 {
+        font-family: "DM Serif Display", serif;
+        font-size: 17px;
+      }
+      .empty-state p {
+        font-size: 12px;
+        color: var(--muted);
+        max-width: 220px;
+        line-height: 1.6;
+      }
+      .quality-bar-wrap {
+        margin: 0 18px 14px;
+        padding: 12px 14px;
+        background: var(--surface2);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        display: none;
+      }
+      .quality-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .quality-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .quality-score {
+        font-family: "DM Mono", monospace;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .quality-track {
+        height: 5px;
+        background: var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .quality-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition:
+          width 0.6s ease,
+          background 0.4s;
+      }
+      .quality-issues {
+        margin-top: 7px;
+        font-size: 11px;
+        color: var(--danger);
+        line-height: 1.5;
+      }
+      .feedback-bar {
+        margin: 0 18px 14px;
+        padding: 14px;
+        background: rgba(124, 109, 250, 0.06);
+        border: 1px solid rgba(124, 109, 250, 0.18);
+        border-radius: 8px;
+        display: none;
+      }
+      .feedback-bar h4 {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 10px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+      }
+      .feedback-bar textarea {
+        min-height: 60px;
+        font-size: 12px;
+        margin-bottom: 10px;
+      }
+      .feedback-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .btn-approve {
+        flex: 1;
+        padding: 9px;
+        background: rgba(74, 222, 128, 0.12);
+        border: 1px solid rgba(74, 222, 128, 0.3);
+        border-radius: 7px;
+        color: var(--success);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-approve:hover {
+        background: rgba(74, 222, 128, 0.2);
+      }
+      .btn-regen {
+        flex: 1;
+        padding: 9px;
+        background: rgba(250, 109, 143, 0.1);
+        border: 1px solid rgba(250, 109, 143, 0.25);
+        border-radius: 7px;
+        color: var(--accent2);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-regen:hover {
+        background: rgba(250, 109, 143, 0.18);
+      }
+      .iter-badge {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 7px;
+      }
+      #result {
+        display: none;
+        padding: 16px 18px;
+      }
+      .meta-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-bottom: 16px;
+      }
+      .meta-chip {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        border: 1px solid;
+      }
+      .meta-chip.time {
+        color: var(--gold);
+        border-color: rgba(240, 192, 96, 0.3);
+        background: rgba(240, 192, 96, 0.08);
+      }
+      .meta-chip.mode-news {
+        color: var(--gold);
+        border-color: rgba(240, 192, 96, 0.3);
+        background: rgba(240, 192, 96, 0.08);
+      }
+      .meta-chip.mode-product {
+        color: var(--teal);
+        border-color: rgba(45, 212, 191, 0.3);
+        background: rgba(45, 212, 191, 0.08);
+      }
+      .meta-chip.phase {
+        color: var(--accent);
+        border-color: rgba(124, 109, 250, 0.3);
+        background: rgba(124, 109, 250, 0.08);
+      }
+      .blog-title {
+        font-family: "DM Serif Display", serif;
+        font-size: 24px;
+        line-height: 1.3;
+        margin-bottom: 8px;
+      }
+      .blog-meta-desc {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.6;
+        padding: 10px 12px;
+        background: var(--surface2);
+        border-left: 3px solid var(--accent);
+        border-radius: 0 6px 6px 0;
+        margin-bottom: 16px;
+      }
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 14px 0;
+      }
+      .blog-content {
+        font-size: 13px;
+        line-height: 1.8;
+        color: #c8c8e0;
+        max-height: 460px;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+      .blog-content::-webkit-scrollbar {
+        width: 3px;
+      }
+      .blog-content::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+      }
+      .blog-content h1,
+      .blog-content h2 {
+        font-family: "DM Serif Display", serif;
+        color: var(--text);
+        margin: 18px 0 7px;
+      }
+      .blog-content h1 {
+        font-size: 18px;
+      }
+      .blog-content h2 {
+        font-size: 16px;
+      }
+      .blog-content h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        margin: 14px 0 5px;
+      }
+      .blog-content p {
+        margin-bottom: 10px;
+      }
+      .blog-content strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .blog-content em {
+        color: var(--gold);
+        font-style: italic;
+      }
+      .blog-content ul,
+      .blog-content ol {
+        padding-left: 18px;
+        margin-bottom: 10px;
+      }
+      .blog-content li {
+        margin-bottom: 4px;
+      }
+      .blog-content code {
+        font-family: "DM Mono", monospace;
+        font-size: 11px;
+        background: var(--surface2);
+        padding: 2px 5px;
+        border-radius: 4px;
+        color: var(--accent2);
+      }
+      .blog-content blockquote {
+        border-left: 3px solid var(--accent);
+        padding-left: 12px;
+        margin: 10px 0;
+        color: var(--muted);
+        font-style: italic;
+      }
+      .cta-box {
+        margin-top: 12px;
+        padding: 10px 14px;
+        background: rgba(45, 212, 191, 0.07);
+        border: 1px solid rgba(45, 212, 191, 0.2);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--teal);
+        display: none;
+      }
+      .cta-box strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .keywords-row {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        align-items: center;
+      }
+      .kw-label {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--muted);
+        margin-right: 2px;
+      }
+      .kw-tag {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        background: rgba(74, 222, 128, 0.08);
+        border: 1px solid rgba(74, 222, 128, 0.2);
+        color: var(--success);
+        padding: 3px 8px;
+        border-radius: 20px;
+      }
+      .sources-section {
+        margin-top: 14px;
+        display: none;
+      }
+      .sources-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 7px;
+      }
+      .source-link {
+        display: block;
+        padding: 7px 10px;
+        margin-bottom: 5px;
+        background: rgba(124, 109, 250, 0.06);
+        border: 1px solid rgba(124, 109, 250, 0.12);
+        border-radius: 6px;
+        text-decoration: none;
+        color: var(--text);
+        font-size: 11px;
+        transition: border-color 0.15s;
+      }
+      .source-link:hover {
+        border-color: rgba(124, 109, 250, 0.3);
+      }
+      .source-link-title {
+        font-weight: 600;
+        color: #e8e8f0;
+        margin-bottom: 2px;
+      }
+      .source-link-url {
+        color: var(--muted);
+        font-size: 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .copy-btn {
+        margin-top: 14px;
+        width: 100%;
+        padding: 9px;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--muted);
+        font-family: "Instrument Sans", sans-serif;
+        font-size: 12px;
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          color 0.2s;
+      }
+      .copy-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .error-box {
+        margin: 16px;
+        padding: 12px 14px;
+        background: rgba(250, 109, 143, 0.08);
+        border: 1px solid rgba(250, 109, 143, 0.25);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--accent2);
+        display: none;
+      }
+      .loading-overlay {
+        padding: 50px 20px;
+        text-align: center;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+      }
+      .loading-dots {
+        display: flex;
+        gap: 5px;
+      }
+      .loading-dots span {
+        width: 7px;
+        height: 7px;
+        background: var(--accent);
+        border-radius: 50%;
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+      .loading-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .loading-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.2;
+          transform: scale(0.8);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      .loading-overlay p {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .loading-overlay strong {
+        font-family: "DM Serif Display", serif;
+        font-size: 15px;
+        color: var(--text);
+        display: block;
+        margin-bottom: 3px;
+      }
+      .approved-banner {
+        margin: 0 18px 14px;
+        padding: 10px 14px;
+        background: rgba(74, 222, 128, 0.1);
+        border: 1px solid rgba(74, 222, 128, 0.25);
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--success);
+        font-weight: 600;
+        display: none;
+        text-align: center;
+      }
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 16px 0;
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .status-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 5px var(--success);
+        display: inline-block;
+        margin-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="wrapper">
+      <header>
+        <div class="logo-mark">ET</div>
+        <div class="logo-text">ET<span>-AI</span> Content Engine</div>
+        <div class="phase-badge">LANGGRAPH · PHASE 1.5</div>
+      </header>
 
-<header>
-  <div class="logo-mark">ET</div>
-  <div class="logo-text">ET<span>-AI</span> Content Engine</div>
-  <div class="phase-badge">LANGGRAPH · PHASE 1.5</div>
-</header>
+      <div class="main-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="dot"></div>
+            <h2>Content Parameters</h2>
+          </div>
+          <div class="form-body">
+            <div>
+              <label>Blog Mode</label>
+              <div class="mode-switch">
+                <button class="mode-btn news active" onclick="setMode('news')">
+                  📰 News / Topic Blog
+                </button>
+                <button class="mode-btn product" onclick="setMode('product')">
+                  🚀 Product Launch Blog
+                </button>
+              </div>
+            </div>
 
-<div class="main-grid">
-  <div class="panel">
-    <div class="panel-header">
-      <div class="dot"></div>
-      <h2>Content Parameters</h2>
-    </div>
-    <div class="form-body">
+            <div>
+              <label id="topic-label">Topic / Idea *</label>
+              <textarea
+                id="topic"
+                rows="2"
+                placeholder="e.g. Why AI is changing content marketing"
+              ></textarea>
+            </div>
 
-      <div>
-        <label>Blog Mode</label>
-        <div class="mode-switch">
-          <button class="mode-btn news active" onclick="setMode('news')">📰 News / Topic Blog</button>
-          <button class="mode-btn product" onclick="setMode('product')">🚀 Product Launch Blog</button>
+            <div>
+              <label>Target Audience</label>
+              <input
+                id="audience"
+                type="text"
+                placeholder="e.g. startup founders, B2B marketers"
+              />
+            </div>
+
+            <div id="news-fields">
+              <div>
+                <label>Additional Context</label>
+                <textarea
+                  id="context"
+                  rows="2"
+                  placeholder="Specific angle, tone, or focus..."
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="product-fields" id="product-fields">
+              <div class="field-divider"></div>
+              <div>
+                <label>Product Description *</label>
+                <textarea
+                  id="product_details"
+                  rows="3"
+                  placeholder="What does your product do? What problem does it solve?"
+                ></textarea>
+              </div>
+              <div>
+                <label>Key Features</label>
+                <textarea
+                  id="key_features"
+                  rows="2"
+                  placeholder="e.g. Real-time sync, AI-powered, No-code setup"
+                ></textarea>
+              </div>
+              <div>
+                <label>Unique Value Proposition</label>
+                <input
+                  id="uvp"
+                  type="text"
+                  placeholder="e.g. 10x faster than manual content creation"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label>Word Count</label>
+              <div class="range-wrap">
+                <input
+                  type="range"
+                  id="length"
+                  min="300"
+                  max="2000"
+                  step="100"
+                  value="1000"
+                  oninput="
+                    document.getElementById('length-val').textContent =
+                      this.value + ' words'
+                  "
+                />
+                <span class="range-val" id="length-val">1000 words</span>
+              </div>
+            </div>
+
+            <!-- Image generation toggle -->
+            <div
+              style="
+                padding: 12px 14px;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  margin-bottom: 10px;
+                "
+              >
+                <label
+                  style="
+                    margin: 0;
+                    color: var(--text);
+                    font-size: 12px;
+                    text-transform: none;
+                    letter-spacing: 0;
+                  "
+                >
+                  Generate images with blog
+                </label>
+                <label
+                  style="
+                    position: relative;
+                    width: 36px;
+                    height: 20px;
+                    cursor: pointer;
+                  "
+                >
+                  <input
+                    type="checkbox"
+                    id="gen-images-toggle"
+                    onchange="toggleImageOptions(this.checked)"
+                    style="
+                      position: absolute;
+                      opacity: 0;
+                      width: 100%;
+                      height: 100%;
+                      cursor: pointer;
+                      margin: 0;
+                    "
+                  />
+                  <span
+                    id="toggle-track"
+                    style="
+                      position: absolute;
+                      inset: 0;
+                      background: var(--border);
+                      border-radius: 10px;
+                      transition: background 0.2s;
+                    "
+                  ></span>
+                  <span
+                    id="toggle-thumb"
+                    style="
+                      position: absolute;
+                      top: 2px;
+                      left: 2px;
+                      width: 16px;
+                      height: 16px;
+                      background: #fff;
+                      border-radius: 50%;
+                      transition: transform 0.2s;
+                      pointer-events: none;
+                    "
+                  ></span>
+                </label>
+              </div>
+
+              <div id="image-format-options" style="display: none">
+                <label style="margin-bottom: 6px">Image formats</label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap">
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 5px;
+                      text-transform: none;
+                      letter-spacing: 0;
+                      font-size: 12px;
+                      color: var(--text);
+                      cursor: pointer;
+                    "
+                  >
+                    <input
+                      type="checkbox"
+                      id="fmt-blog"
+                      checked
+                      style="width: auto; margin: 0"
+                    />
+                    Blog hero
+                  </label>
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 5px;
+                      text-transform: none;
+                      letter-spacing: 0;
+                      font-size: 12px;
+                      color: var(--text);
+                      cursor: pointer;
+                    "
+                  >
+                    <input
+                      type="checkbox"
+                      id="fmt-instagram"
+                      style="width: auto; margin: 0"
+                    />
+                    Instagram
+                  </label>
+                  <label
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 5px;
+                      text-transform: none;
+                      letter-spacing: 0;
+                      font-size: 12px;
+                      color: var(--text);
+                      cursor: pointer;
+                    "
+                  >
+                    <input
+                      type="checkbox"
+                      id="fmt-linkedin"
+                      style="width: auto; margin: 0"
+                    />
+                    LinkedIn
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Social media platforms -->
+            <div
+              style="
+                padding: 12px 14px;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+              "
+            >
+              <label style="margin-bottom: 8px"
+                >Generate social media posts</label
+              >
+              <div style="display: flex; gap: 10px">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    text-transform: none;
+                    letter-spacing: 0;
+                    font-size: 13px;
+                    color: var(--text);
+                    cursor: pointer;
+                    padding: 8px 12px;
+                    background: var(--surface);
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    flex: 1;
+                    justify-content: center;
+                  "
+                  id="insta-label"
+                >
+                  <input
+                    type="checkbox"
+                    id="platform-instagram"
+                    onchange="togglePlatform('instagram', this.checked)"
+                    style="width: auto; margin: 0"
+                  />
+                  <span>📸 Instagram</span>
+                </label>
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    text-transform: none;
+                    letter-spacing: 0;
+                    font-size: 13px;
+                    color: var(--text);
+                    cursor: pointer;
+                    padding: 8px 12px;
+                    background: var(--surface);
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    flex: 1;
+                    justify-content: center;
+                  "
+                  id="li-label"
+                >
+                  <input
+                    type="checkbox"
+                    id="platform-linkedin"
+                    onchange="togglePlatform('linkedin', this.checked)"
+                    style="width: auto; margin: 0"
+                  />
+                  <span>💼 LinkedIn</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- User image upload for social posts -->
+            <div
+              id="social-image-upload"
+              style="display: none; margin-top: 10px"
+            >
+              <label>Upload your own image (optional)</label>
+              <div
+                style="
+                  position: relative;
+                  border: 2px dashed var(--border);
+                  border-radius: 8px;
+                  padding: 16px;
+                  text-align: center;
+                  cursor: pointer;
+                  transition: border-color 0.2s;
+                "
+                id="upload-zone"
+                ondragover="
+                  event.preventDefault();
+                  this.style.borderColor = 'var(--accent)';
+                "
+                ondragleave="this.style.borderColor = 'var(--border)'"
+                ondrop="handleDrop(event)"
+              >
+                <input
+                  type="file"
+                  id="user-image-input"
+                  accept="image/*"
+                  style="
+                    position: absolute;
+                    inset: 0;
+                    opacity: 0;
+                    cursor: pointer;
+                  "
+                  onchange="handleImageUpload(this)"
+                />
+                <div id="upload-placeholder">
+                  <div style="font-size: 24px; margin-bottom: 6px">📁</div>
+                  <div style="font-size: 12px; color: var(--muted)">
+                    Drag & drop or click to upload<br />
+                    <span style="font-size: 11px"
+                      >PNG, JPG — will be used as post background</span
+                    >
+                  </div>
+                </div>
+                <div id="upload-preview" style="display: none">
+                  <img
+                    id="preview-img"
+                    style="
+                      max-height: 80px;
+                      border-radius: 6px;
+                      margin-bottom: 6px;
+                    "
+                  />
+                  <div
+                    style="font-size: 11px; color: var(--success)"
+                    id="upload-filename"
+                  ></div>
+                  <button
+                    onclick="clearUpload(event)"
+                    style="
+                      margin-top: 4px;
+                      font-size: 11px;
+                      color: var(--danger);
+                      background: none;
+                      border: none;
+                      cursor: pointer;
+                    "
+                  >
+                    ✕ Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-generate" id="gen-btn" onclick="generateBlog()">
+              <div class="spinner" id="spinner"></div>
+              <span id="btn-text">✦ Generate Blog</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel output-panel">
+          <div class="panel-header">
+            <div
+              class="dot"
+              style="
+                background: var(--accent2);
+                box-shadow: 0 0 7px var(--accent2);
+              "
+            ></div>
+            <h2>Generated Content</h2>
+          </div>
+
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon">✦</div>
+            <h3>Ready to write</h3>
+            <p>Choose your mode, fill in the details, then generate.</p>
+          </div>
+
+          <div class="loading-overlay" id="loading-overlay">
+            <div class="loading-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <div>
+              <strong id="loading-msg">Writing your blog...</strong>
+              <p>LangGraph · Groq · LLaMA 3.3</p>
+            </div>
+          </div>
+
+          <div class="error-box" id="error-box"></div>
+          <div class="approved-banner" id="approved-banner">
+            ✓ Blog Approved — ready to publish!
+          </div>
+
+          <div
+            class="rag-panel"
+            id="rag-panel"
+            style="
+              display: none;
+              margin: 0 18px 14px;
+              padding: 12px 14px;
+              background: var(--surface2);
+              border-radius: 8px;
+              border: 1px solid var(--border);
+            "
+          >
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+              "
+            >
+              <span
+                style="
+                  font-size: 11px;
+                  font-weight: 600;
+                  letter-spacing: 0.6px;
+                  text-transform: uppercase;
+                  color: var(--muted);
+                "
+                >RAG Fact Check</span
+              >
+              <span
+                id="rag-verdict-badge"
+                style="
+                  font-family: &quot;DM Mono&quot;, monospace;
+                  font-size: 10px;
+                  padding: 3px 9px;
+                  border-radius: 20px;
+                  border: 1px solid;
+                "
+              ></span>
+            </div>
+            <div
+              id="rag-summary"
+              style="
+                font-size: 12px;
+                color: var(--muted);
+                margin-bottom: 8px;
+                line-height: 1.5;
+              "
+            ></div>
+            <div
+              id="rag-suggestions"
+              style="font-size: 11px; color: #c8c8e0; line-height: 1.7"
+            ></div>
+          </div>
+
+          <div class="quality-bar-wrap" id="quality-wrap">
+            <div class="quality-header">
+              <span class="quality-label">Quality Score</span>
+              <span class="quality-score" id="quality-score-val">—</span>
+            </div>
+            <div class="quality-track">
+              <div
+                class="quality-fill"
+                id="quality-fill"
+                style="width: 0%"
+              ></div>
+            </div>
+            <div class="quality-issues" id="quality-issues"></div>
+          </div>
+
+          <div class="feedback-bar" id="feedback-bar">
+            <h4>Human Review — Iteration <span id="iter-num">1</span> / 3</h4>
+            <textarea
+              id="feedback-text"
+              placeholder="What should be improved? e.g. 'Make the intro more punchy' or 'Add more stats'..."
+            ></textarea>
+            <div class="feedback-actions">
+              <button class="btn-approve" onclick="submitFeedback('approve')">
+                ✓ Approve
+              </button>
+              <button class="btn-regen" onclick="submitFeedback('regenerate')">
+                ↺ Regenerate
+              </button>
+            </div>
+            <div class="iter-badge" id="iter-badge"></div>
+          </div>
+
+          <div id="result">
+            <div class="meta-strip" id="meta-strip"></div>
+            <div class="blog-title" id="blog-title"></div>
+            <div class="blog-meta-desc" id="blog-meta-desc"></div>
+            <div class="divider"></div>
+            <div class="blog-content" id="blog-content"></div>
+            <div class="cta-box" id="cta-box">
+              <strong>Call to Action</strong><span id="cta-text"></span>
+            </div>
+            <div class="keywords-row" id="keywords-row"></div>
+            <div class="sources-section" id="sources-section">
+              <div class="sources-label">Sources used</div>
+              <div id="sources-list"></div>
+            </div>
+            <button class="copy-btn" onclick="copyContent()">
+              ⎘ Copy full blog as Markdown
+            </button>
+          </div>
         </div>
       </div>
 
-      <div>
-        <label id="topic-label">Topic / Idea *</label>
-        <textarea id="topic" rows="2" placeholder="e.g. Why AI is changing content marketing"></textarea>
-      </div>
+      <footer>
+        <span><span class="status-dot"></span>localhost:5000</span>
+        <span>·</span><span>llama-3.3-70b-versatile</span> <span>·</span
+        ><span id="mode-indicator">Mode: News</span> <span>·</span
+        ><span id="gen-count">0 blogs generated</span>
+      </footer>
+    </div>
 
-      <div>
-        <label>Target Audience</label>
-        <input id="audience" type="text" placeholder="e.g. startup founders, B2B marketers"/>
-      </div>
+    <script>
+      let currentMode = "news",
+        lastRaw = "",
+        genCount = 0;
 
-      <div id="news-fields">
-        <div>
-          <label>Additional Context</label>
-          <textarea id="context" rows="2" placeholder="Specific angle, tone, or focus..."></textarea>
+      function setMode(mode) {
+        currentMode = mode;
+        document
+          .querySelectorAll(".mode-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.querySelector(".mode-btn." + mode).classList.add("active");
+        document
+          .getElementById("product-fields")
+          .classList.toggle("show", mode === "product");
+        document.getElementById("news-fields").style.display =
+          mode === "news" ? "block" : "none";
+        document.getElementById("topic-label").textContent =
+          mode === "product" ? "Product Name *" : "Topic / Idea *";
+        document.getElementById("topic").placeholder =
+          mode === "product"
+            ? "e.g. LaunchPad — AI content scheduler"
+            : "e.g. Why AI is changing content marketing";
+        document.getElementById("mode-indicator").textContent =
+          "Mode: " + (mode === "news" ? "News" : "Product");
+      }
+
+      async function generateBlog() {
+        const topic = document.getElementById("topic").value.trim();
+        if (!topic) {
+          alert("Please enter a topic or product name.");
+          return;
+        }
+        setLoading(
+          true,
+          currentMode === "news"
+            ? "Searching web + writing..."
+            : "Building product blog...",
+        );
+        resetOutput();
+        const payload = {
+          mode: currentMode,
+          topic,
+          audience:
+            document.getElementById("audience").value || "general audience",
+          length: parseInt(document.getElementById("length").value),
+        };
+
+        if (userImageB64) payload.user_image_b64 = userImageB64;
+
+        // Image toggle
+        const genImages =
+          document.getElementById("gen-images-toggle")?.checked || false;
+        payload.generate_images = genImages;
+        payload.image_formats = [];
+        if (genImages) {
+          if (document.getElementById("fmt-blog")?.checked)
+            payload.image_formats.push("blog");
+          if (document.getElementById("fmt-instagram")?.checked)
+            payload.image_formats.push("instagram");
+          if (document.getElementById("fmt-linkedin")?.checked)
+            payload.image_formats.push("linkedin");
+          if (payload.image_formats.length === 0)
+            payload.image_formats = ["blog"]; // fallback
+        }
+
+
+        // ↓ ADD THESE 4 LINES HERE ↓
+        payload.social_platforms = [];
+        if (document.getElementById("platform-instagram")?.checked)
+          payload.social_platforms.push("instagram");
+        if (document.getElementById("platform-linkedin")?.checked)
+          payload.social_platforms.push("linkedin");
+        // ↑ END OF NEW LINES ↑
+
+        if (currentMode === "news")
+          payload.context = document.getElementById("context").value;
+        else {
+          payload.product_details =
+            document.getElementById("product_details").value;
+          payload.key_features = document.getElementById("key_features").value;
+          payload.uvp = document.getElementById("uvp").value;
+        }
+
+        try {
+          const res = await fetch("http://127.0.0.1:5000/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok || data.error) {
+            showError(data.error || "Something went wrong.");
+            return;
+          }
+          renderResult(data);
+          genCount++;
+          document.getElementById("gen-count").textContent =
+            genCount + " blog" + (genCount > 1 ? "s" : "") + " generated";
+        } catch (e) {
+          showError("Cannot reach backend. Run: python api_server.py");
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      function togglePlatform(platform, on) {
+        const label = document.getElementById(
+          platform === "instagram" ? "insta-label" : "li-label",
+        );
+        if (label) {
+          label.style.borderColor = on ? "var(--accent)" : "var(--border)";
+          label.style.color = on ? "var(--accent)" : "var(--text)";
+        }
+
+        // Show/hide image upload if social is enabled
+        const isInsta = document.getElementById("platform-instagram")?.checked;
+        const isLi = document.getElementById("platform-linkedin")?.checked;
+        const uploadBox = document.getElementById("social-image-upload");
+        if (uploadBox) {
+          uploadBox.style.display = isInsta || isLi ? "block" : "none";
+        }
+      }
+
+      let userImageB64 = null;
+
+      function handleImageUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+        processFile(file);
+      }
+
+      function handleDrop(e) {
+        e.preventDefault();
+        document.getElementById("upload-zone").style.borderColor = "var(--border)";
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) {
+          processFile(file);
+        }
+      }
+
+      function processFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          userImageB64 = e.target.result.split(",")[1];
+          document.getElementById("upload-placeholder").style.display = "none";
+          document.getElementById("upload-preview").style.display = "block";
+          document.getElementById("preview-img").src = e.target.result;
+          document.getElementById("upload-filename").textContent = file.name;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function clearUpload(e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        userImageB64 = null;
+        document.getElementById("user-image-input").value = "";
+        document.getElementById("upload-placeholder").style.display = "block";
+        document.getElementById("upload-preview").style.display = "none";
+        document.getElementById("preview-img").src = "";
+      }
+
+      function toggleImageOptions(on) {
+        document.getElementById("image-format-options").style.display = on
+          ? "block"
+          : "none";
+        const track = document.getElementById("toggle-track");
+        const thumb = document.getElementById("toggle-thumb");
+        if (track) {
+          track.style.background = on ? "#7c6dfa" : "var(--border)";
+        }
+        if (thumb) {
+          thumb.style.transform = on ? "translateX(16px)" : "translateX(0)";
+        }
+      }
+
+      async function submitFeedback(action) {
+        const feedback = document.getElementById("feedback-text").value.trim();
+        if (action === "regenerate" && !feedback) {
+          alert("Please describe what to improve.");
+          return;
+        }
+        setLoading(
+          true,
+          action === "approve"
+            ? "Saving..."
+            : "Rewriting with your feedback...",
+        );
+        try {
+          const res = await fetch("http://127.0.0.1:5000/feedback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action, feedback }),
+          });
+          const data = await res.json();
+          if (action === "approve") {
+            document.getElementById("approved-banner").style.display = "block";
+            document.getElementById("feedback-bar").style.display = "none";
+          } else {
+            document.getElementById("feedback-text").value = "";
+            renderResult(data);
+          }
+        } catch (e) {
+          showError("Feedback failed. Is the backend running?");
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      function renderResult(data) {
+        lastRaw = data.content || "";
+        const score = data.quality_score || 0;
+        document.getElementById("quality-wrap").style.display = "block";
+        document.getElementById("quality-score-val").textContent =
+          score.toFixed(0) + " / 100";
+        document.getElementById("quality-score-val").style.color =
+          score >= 75 ? "#4ade80" : score >= 50 ? "#f0c060" : "#f87171";
+        const fill = document.getElementById("quality-fill");
+        fill.style.width = score + "%";
+        fill.style.background =
+          score >= 75 ? "#4ade80" : score >= 50 ? "#f0c060" : "#f87171";
+        document.getElementById("quality-issues").textContent =
+          data.quality_issues && data.quality_issues !== "None"
+            ? "⚠ " + data.quality_issues
+            : "";
+        document.getElementById("feedback-bar").style.display = "block";
+        document.getElementById("iter-num").textContent = data.iteration || 1;
+        const rem = (data.max_iterations || 3) - (data.iteration || 1);
+        document.getElementById("iter-badge").textContent =
+          rem > 0
+            ? rem + " regeneration" + (rem > 1 ? "s" : "") + " remaining"
+            : "Final version — approve or copy";
+        const strip = document.getElementById("meta-strip");
+        strip.innerHTML = `<span class="meta-chip mode-${data.mode}">${data.mode === "news" ? "📰 News blog" : "🚀 Product blog"}</span>`;
+        if (data.reading_time)
+          strip.innerHTML += `<span class="meta-chip time">⏱ ${data.reading_time}</span>`;
+        if (data.iteration > 1)
+          strip.innerHTML += `<span class="meta-chip phase">↺ Iteration ${data.iteration}</span>`;
+        document.getElementById("blog-title").textContent =
+          data.title || "Generated Blog";
+        const metaEl = document.getElementById("blog-meta-desc");
+        if (data.meta_description) {
+          metaEl.textContent = data.meta_description;
+          metaEl.style.display = "block";
+        } else metaEl.style.display = "none";
+        document.getElementById("blog-content").innerHTML = markdownToHtml(
+          data.content || "",
+        );
+        const ctaBox = document.getElementById("cta-box");
+        if (data.target_cta) {
+          document.getElementById("cta-text").textContent = data.target_cta;
+          ctaBox.style.display = "block";
+        } else ctaBox.style.display = "none";
+        const kwRow = document.getElementById("keywords-row");
+        kwRow.innerHTML = "";
+        if (data.seo_keywords && data.seo_keywords.length) {
+          kwRow.innerHTML = '<span class="kw-label">SEO</span>';
+          data.seo_keywords.forEach((k) => {
+            kwRow.innerHTML += `<span class="kw-tag">${k}</span>`;
+          });
+        }
+        const srcSec = document.getElementById("sources-section");
+        const srcList = document.getElementById("sources-list");
+        if (data.sources && data.sources.length) {
+          srcList.innerHTML = data.sources
+            .map(
+              (s) =>
+                `<a href="${s.url}" target="_blank" class="source-link"><div class="source-link-title">${s.title}</div><div class="source-link-url">${s.url}</div></a>`,
+            )
+            .join("");
+          srcSec.style.display = "block";
+        } else srcSec.style.display = "none";
+        document.getElementById("empty-state").style.display = "none";
+        document.getElementById("result").style.display = "block";
+
+        // RAG panel
+        if (data.rag_verdict) {
+          const panel = document.getElementById("rag-panel");
+          const badge = document.getElementById("rag-verdict-badge");
+          const colors = {
+            PASS: "#4ade80",
+            NEEDS_REVISION: "#f0c060",
+            FAIL: "#f87171",
+          };
+          const color = colors[data.rag_verdict] || "#7a7a9a";
+          badge.textContent = data.rag_verdict.replace("_", " ");
+          badge.style.color = color;
+          badge.style.borderColor = color + "55";
+          badge.style.background = color + "15";
+          document.getElementById("rag-summary").textContent =
+            data.rag_summary || "";
+          if (data.rag_suggestions && data.rag_suggestions.length) {
+            document.getElementById("rag-suggestions").innerHTML =
+              data.rag_suggestions.map((s) => `• ${s}`).join("<br>");
+          }
+          panel.style.display = "block";
+        }
+
+        // Review panel
+        if (data.review_verdict) {
+          const vColors = {
+            APPROVED: "#4ade80",
+            NEEDS_FIX: "#f0c060",
+            REJECTED: "#f87171",
+          };
+          const vc = vColors[data.review_verdict] || "#7a7a9a";
+          let html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)">Compliance Review</span>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;
+        border:1px solid ${vc}55;background:${vc}15;color:${vc}">${data.review_verdict.replace("_", " ")}</span>
+    </div>`;
+
+          const checks = data.review_checks || {};
+          const checkNames = ["tone", "legal", "brand", "accuracy", "policy"];
+          checkNames.forEach((k) => {
+            const c = checks[k] || {};
+            const sc = c.status === "PASS" ? "#4ade80" : "#f87171";
+            const issues = (c.issues || []).join(", ") || "None";
+            html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
+      <span style="width:6px;height:6px;border-radius:50%;background:${sc};flex-shrink:0"></span>
+      <span style="color:var(--text);min-width:70px;text-transform:capitalize">${k}</span>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:${sc}">${c.score || 0}/100</span>
+      <span style="color:var(--muted);font-size:11px">${issues !== "None" ? issues : ""}</span>
+    </div>`;
+          });
+
+          if (data.editor_note) {
+            html += `<div style="margin-top:8px;padding:8px 10px;background:var(--surface);border-radius:6px;
+      font-size:11px;color:var(--muted);border-left:3px solid ${vc}">${data.editor_note}</div>`;
+          }
+
+          if (data.review_fixes && data.review_fixes.length) {
+            html += `<div style="margin-top:8px;font-size:11px;color:var(--accent2)">`;
+            data.review_fixes.forEach((f) => {
+              html += `<div style="margin-bottom:3px">• ${f}</div>`;
+            });
+            html += `</div>`;
+          }
+
+          let panel = document.getElementById("review-panel");
+          if (!panel) {
+            panel = document.createElement("div");
+            panel.id = "review-panel";
+            panel.style.cssText =
+              "margin:0 18px 14px;padding:12px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)";
+            document.getElementById("quality-wrap").after(panel);
+          }
+          panel.innerHTML = html;
+          panel.style.display = "block";
+        }
+
+        // Images
+        if (data.images && Object.keys(data.images).length) {
+          let imgHtml = `<div style="margin-bottom:8px;font-size:11px;font-weight:600;letter-spacing:.6px;
+    text-transform:uppercase;color:var(--muted)">Generated Images</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">`;
+
+          Object.entries(data.images).forEach(([fmt, img]) => {
+            imgHtml += `
+      <div style="flex:1;min-width:180px">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:5px">${img.label}</div>
+        <img src="data:image/png;base64,${img.base64}"
+          style="width:100%;border-radius:8px;border:1px solid var(--border)" alt="${fmt}"/>
+        <a href="data:image/png;base64,${img.base64}" download="${fmt}_image.png"
+          style="display:block;margin-top:5px;font-size:11px;color:var(--accent);text-decoration:none;text-align:center">
+          ↓ Download ${img.label}
+        </a>
+      </div>`;
+          });
+          imgHtml += `</div>`;
+
+          let imgSection = document.getElementById("images-section");
+          if (!imgSection) {
+            imgSection = document.createElement("div");
+            imgSection.id = "images-section";
+            imgSection.style.cssText =
+              "margin-top:16px;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)";
+            document.getElementById("blog-content").before(imgSection);
+          }
+          imgSection.innerHTML = imgHtml;
+          imgSection.style.display = "block";
+        }
+
+        // Social media posts
+        if (data.social_posts && Object.keys(data.social_posts).length) {
+          let html = "";
+
+          Object.entries(data.social_posts).forEach(([platform, post]) => {
+            const icon = platform === "instagram" ? "📸" : "💼";
+            const pname = platform.charAt(0).toUpperCase() + platform.slice(1);
+            const cap = post.caption || "";
+
+            html += `
+    <div style="margin-bottom:20px;border:1px solid var(--border);
+                border-radius:10px;overflow:hidden">
+      <div style="padding:10px 14px;background:var(--surface2);
+                  display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">
+          ${icon} ${pname} Post
+        </span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;
+                     color:var(--muted)">${post.dimensions}</span>
+      </div>
+      ${
+        post.image_b64
+          ? `
+      <div style="padding:12px;background:#000">
+        <img src="data:image/png;base64,${post.image_b64}"
+          style="width:100%;border-radius:6px;display:block" alt="${platform}"/>
+        <a href="data:image/png;base64,${post.image_b64}"
+           download="${platform}_post.png"
+           style="display:block;text-align:center;margin-top:8px;font-size:11px;
+                  color:var(--accent);text-decoration:none">
+          ↓ Download ${pname} Image
+        </a>
+      </div>`
+          : ""
+      }
+      <div style="padding:12px 14px">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;
+                    letter-spacing:.6px;color:var(--muted);margin-bottom:7px">
+          ${platform === "instagram" ? "Caption" : "Post Text"}
         </div>
-      </div>
-
-      <div class="product-fields" id="product-fields">
-        <div class="field-divider"></div>
-        <div>
-          <label>Product Description *</label>
-          <textarea id="product_details" rows="3" placeholder="What does your product do? What problem does it solve?"></textarea>
+        <div style="font-size:12px;color:#c8c8e0;line-height:1.7;
+                    white-space:pre-wrap;max-height:220px;overflow-y:auto;
+                    background:var(--surface2);padding:10px;border-radius:6px">
+${cap}
         </div>
-        <div>
-          <label>Key Features</label>
-          <textarea id="key_features" rows="2" placeholder="e.g. Real-time sync, AI-powered, No-code setup"></textarea>
+        <button onclick="copyText(\`${cap.replace(/`/g, "\\`")}\`)"
+          style="margin-top:8px;width:100%;padding:7px;background:transparent;
+                 border:1px solid var(--border);border-radius:6px;color:var(--muted);
+                 font-size:11px;cursor:pointer;transition:all .2s"
+          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+          ⎘ Copy ${pname === "Instagram" ? "Caption" : "Post Text"}
+        </button>
+      </div>
+    </div>`;
+          });
+
+          let socialSection = document.getElementById("social-section");
+          if (!socialSection) {
+            socialSection = document.createElement("div");
+            socialSection.id = "social-section";
+            socialSection.style.cssText = "margin-top:16px";
+            document.querySelector(".copy-btn").before(socialSection);
+          }
+
+          const header = `<div style="font-size:11px;font-weight:600;letter-spacing:.6px;
+    text-transform:uppercase;color:var(--muted);margin-bottom:12px">
+    Social Media Posts</div>`;
+          socialSection.innerHTML = header + html;
+          socialSection.style.display = "block";
+        }
+
+        if (data.social_posts && Object.keys(data.social_posts).length) {
+          let html = "";
+
+          Object.entries(data.social_posts).forEach(([platform, post]) => {
+            if (post.error) return;
+
+            const icon = platform === "instagram" ? "📸" : "💼";
+            const pname = platform === "instagram" ? "Instagram" : "LinkedIn";
+            // Instagram uses 'caption', LinkedIn uses 'post_text'
+            const capText = post.caption || post.post_text || "";
+            const size = post.size || "";
+
+            html += `
+    <div style="margin-bottom:20px;border:1px solid var(--border);
+                border-radius:10px;overflow:hidden">
+
+      <!-- Header -->
+      <div style="padding:10px 14px;background:var(--surface2);
+                  display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">
+          ${icon} ${pname}
+        </span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)">
+          ${size}
+        </span>
+      </div>
+
+      <!-- Image -->
+      ${
+        post.image_b64
+          ? `
+      <div style="background:#000;padding:12px;text-align:center">
+        <img src="data:image/png;base64,${post.image_b64}"
+             style="max-width:100%;border-radius:8px;
+                    ${platform === "instagram" ? "max-height:360px" : "width:100%"}"
+             alt="${platform} post"/>
+        <a href="data:image/png;base64,${post.image_b64}"
+           download="${platform}_post.png"
+           style="display:inline-block;margin-top:8px;font-size:11px;
+                  color:var(--accent);text-decoration:none">
+          ↓ Download ${pname} Image
+        </a>
+      </div>`
+          : ""
+      }
+
+      <!-- Caption -->
+      <div style="padding:14px">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;
+                    letter-spacing:.6px;color:var(--muted);margin-bottom:8px">
+          ${platform === "instagram" ? "Caption" : "Post Text"}
         </div>
-        <div>
-          <label>Unique Value Proposition</label>
-          <input id="uvp" type="text" placeholder="e.g. 10x faster than manual content creation"/>
+        <div style="font-size:13px;color:#c8c8e0;line-height:1.8;
+                    white-space:pre-wrap;background:var(--surface2);
+                    padding:12px;border-radius:8px;
+                    max-height:260px;overflow-y:auto;
+                    border-left:3px solid ${platform === "instagram" ? "#fa6d8f" : "#378ADD"}">
+${capText}
         </div>
+        <button onclick="copyText(\`${capText.replace(/\\/g, "\\\\").replace(/`/g, "\\`")}\`)"
+          style="margin-top:8px;width:100%;padding:8px;background:transparent;
+                 border:1px solid var(--border);border-radius:6px;color:var(--muted);
+                 font-size:12px;cursor:pointer;font-family:'Instrument Sans',sans-serif"
+          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+          ⎘ Copy ${platform === "instagram" ? "Caption" : "Post Text"}
+        </button>
       </div>
+    </div>`;
+          });
 
-      <div>
-        <label>Word Count</label>
-        <div class="range-wrap">
-          <input type="range" id="length" min="300" max="2000" step="100" value="1000"
-            oninput="document.getElementById('length-val').textContent=this.value+' words'"/>
-          <span class="range-val" id="length-val">1000 words</span>
-        </div>
-      </div>
+          let sec = document.getElementById("social-section");
+          if (!sec) {
+            sec = document.createElement("div");
+            sec.id = "social-section";
+            document.querySelector(".copy-btn").before(sec);
+          }
+          sec.innerHTML = `
+    <div style="font-size:11px;font-weight:600;letter-spacing:.6px;
+                text-transform:uppercase;color:var(--muted);
+                margin:16px 0 12px">Social Media Posts</div>
+    ${html}`;
+          sec.style.display = "block";
+        }
+      }
 
-      <button class="btn-generate" id="gen-btn" onclick="generateBlog()">
-        <div class="spinner" id="spinner"></div>
-        <span id="btn-text">✦ Generate Blog</span>
-      </button>
+      function resetOutput() {
+        ["result", "error-box", "feedback-bar", "approved-banner"].forEach(
+          (id) => (document.getElementById(id).style.display = "none"),
+        );
+        document.getElementById("quality-wrap").style.display = "none";
+        document.getElementById("empty-state").style.display = "none";
+      }
 
-    </div>
-  </div>
+      function setLoading(on, msg = "Writing...") {
+        document.getElementById("gen-btn").disabled = on;
+        document.getElementById("spinner").style.display = on
+          ? "block"
+          : "none";
+        document.getElementById("btn-text").textContent = on
+          ? "Working..."
+          : "✦ Generate Blog";
+        document.getElementById("loading-overlay").style.display = on
+          ? "flex"
+          : "none";
+        document.getElementById("loading-msg").textContent = msg;
+      }
 
-  <div class="panel output-panel">
-    <div class="panel-header">
-      <div class="dot" style="background:var(--accent2);box-shadow:0 0 7px var(--accent2)"></div>
-      <h2>Generated Content</h2>
-    </div>
+      function showError(msg) {
+        const el = document.getElementById("error-box");
+        el.textContent = "⚠ " + msg;
+        el.style.display = "block";
+        document.getElementById("empty-state").style.display = "flex";
+      }
 
-    <div class="empty-state" id="empty-state">
-      <div class="empty-icon">✦</div>
-      <h3>Ready to write</h3>
-      <p>Choose your mode, fill in the details, then generate.</p>
-    </div>
+      function markdownToHtml(md) {
+        return md
+          .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+          .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+          .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*(.+?)\*/g, "<em>$1</em>")
+          .replace(/`(.+?)`/g, "<code>$1</code>")
+          .replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>")
+          .replace(/^[-*] (.+)$/gm, "<li>$1</li>")
+          .split("\n\n")
+          .map((p) =>
+            p.startsWith("<h") ||
+            p.startsWith("<ul") ||
+            p.startsWith("<li") ||
+            p.startsWith("<blockquote")
+              ? p
+              : `<p>${p}</p>`,
+          )
+          .join("");
+      }
 
-    <div class="loading-overlay" id="loading-overlay">
-      <div class="loading-dots"><span></span><span></span><span></span></div>
-      <div>
-        <strong id="loading-msg">Writing your blog...</strong>
-        <p>LangGraph · Groq · LLaMA 3.3</p>
-      </div>
-    </div>
+      function copyContent() {
+        if (!lastRaw) return;
+        navigator.clipboard.writeText(lastRaw).then(() => {
+          const btn = document.querySelector(".copy-btn");
+          btn.textContent = "✓ Copied!";
+          setTimeout(
+            () => (btn.textContent = "⎘ Copy full blog as Markdown"),
+            2000,
+          );
+        });
+      }
 
-    <div class="error-box" id="error-box"></div>
-    <div class="approved-banner" id="approved-banner">✓ Blog Approved — ready to publish!</div>
+      function copyText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert("Copied to clipboard!");
+        });
+      }
 
-    <div class="quality-bar-wrap" id="quality-wrap">
-      <div class="quality-header">
-        <span class="quality-label">Quality Score</span>
-        <span class="quality-score" id="quality-score-val">—</span>
-      </div>
-      <div class="quality-track">
-        <div class="quality-fill" id="quality-fill" style="width:0%"></div>
-      </div>
-      <div class="quality-issues" id="quality-issues"></div>
-    </div>
-
-    <div class="feedback-bar" id="feedback-bar">
-      <h4>Human Review — Iteration <span id="iter-num">1</span> / 3</h4>
-      <textarea id="feedback-text" placeholder="What should be improved? e.g. 'Make the intro more punchy' or 'Add more stats'..."></textarea>
-      <div class="feedback-actions">
-        <button class="btn-approve" onclick="submitFeedback('approve')">✓ Approve</button>
-        <button class="btn-regen" onclick="submitFeedback('regenerate')">↺ Regenerate</button>
-      </div>
-      <div class="iter-badge" id="iter-badge"></div>
-    </div>
-
-    <div id="result">
-      <div class="meta-strip" id="meta-strip"></div>
-      <div class="blog-title" id="blog-title"></div>
-      <div class="blog-meta-desc" id="blog-meta-desc"></div>
-      <div class="divider"></div>
-      <div class="blog-content" id="blog-content"></div>
-      <div class="cta-box" id="cta-box"><strong>Call to Action</strong><span id="cta-text"></span></div>
-      <div class="keywords-row" id="keywords-row"></div>
-      <div class="sources-section" id="sources-section">
-        <div class="sources-label">Sources used</div>
-        <div id="sources-list"></div>
-      </div>
-      <button class="copy-btn" onclick="copyContent()">⎘ Copy full blog as Markdown</button>
-    </div>
-  </div>
-</div>
-
-<footer>
-  <span><span class="status-dot"></span>localhost:5000</span>
-  <span>·</span><span>llama-3.3-70b-versatile</span>
-  <span>·</span><span id="mode-indicator">Mode: News</span>
-  <span>·</span><span id="gen-count">0 blogs generated</span>
-</footer>
-</div>
-
-<script>
-let currentMode='news',lastRaw='',genCount=0;
-
-function setMode(mode){
-  currentMode=mode;
-  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector('.mode-btn.'+mode).classList.add('active');
-  document.getElementById('product-fields').classList.toggle('show',mode==='product');
-  document.getElementById('news-fields').style.display=mode==='news'?'block':'none';
-  document.getElementById('topic-label').textContent=mode==='product'?'Product Name *':'Topic / Idea *';
-  document.getElementById('topic').placeholder=mode==='product'?'e.g. LaunchPad — AI content scheduler':'e.g. Why AI is changing content marketing';
-  document.getElementById('mode-indicator').textContent='Mode: '+(mode==='news'?'News':'Product');
-}
-
-async function generateBlog(){
-  const topic=document.getElementById('topic').value.trim();
-  if(!topic){alert('Please enter a topic or product name.');return;}
-  setLoading(true,currentMode==='news'?'Searching web + writing...':'Building product blog...');
-  resetOutput();
-  const payload={mode:currentMode,topic,audience:document.getElementById('audience').value||'general audience',length:parseInt(document.getElementById('length').value)};
-  if(currentMode==='news')payload.context=document.getElementById('context').value;
-  else{payload.product_details=document.getElementById('product_details').value;payload.key_features=document.getElementById('key_features').value;payload.uvp=document.getElementById('uvp').value;}
-  try{
-    const res=await fetch('http://localhost:5000/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    const data=await res.json();
-    if(!res.ok||data.error){showError(data.error||'Something went wrong.');return;}
-    renderResult(data);
-    genCount++;document.getElementById('gen-count').textContent=genCount+' blog'+(genCount>1?'s':'')+' generated';
-  }catch(e){showError('Cannot reach backend. Run: python api_server.py');}
-  finally{setLoading(false);}
-}
-
-async function submitFeedback(action){
-  const feedback=document.getElementById('feedback-text').value.trim();
-  if(action==='regenerate'&&!feedback){alert('Please describe what to improve.');return;}
-  setLoading(true,action==='approve'?'Saving...':'Rewriting with your feedback...');
-  try{
-    const res=await fetch('http://localhost:5000/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,feedback})});
-    const data=await res.json();
-    if(action==='approve'){
-      document.getElementById('approved-banner').style.display='block';
-      document.getElementById('feedback-bar').style.display='none';
-    }else{document.getElementById('feedback-text').value='';renderResult(data);}
-  }catch(e){showError('Feedback failed. Is the backend running?');}
-  finally{setLoading(false);}
-}
-
-function renderResult(data){
-  lastRaw=data.content||'';
-  const score=data.quality_score||0;
-  document.getElementById('quality-wrap').style.display='block';
-  document.getElementById('quality-score-val').textContent=score.toFixed(0)+' / 100';
-  document.getElementById('quality-score-val').style.color=score>=75?'#4ade80':score>=50?'#f0c060':'#f87171';
-  const fill=document.getElementById('quality-fill');
-  fill.style.width=score+'%';fill.style.background=score>=75?'#4ade80':score>=50?'#f0c060':'#f87171';
-  document.getElementById('quality-issues').textContent=data.quality_issues&&data.quality_issues!=='None'?'⚠ '+data.quality_issues:'';
-  document.getElementById('feedback-bar').style.display='block';
-  document.getElementById('iter-num').textContent=data.iteration||1;
-  const rem=(data.max_iterations||3)-(data.iteration||1);
-  document.getElementById('iter-badge').textContent=rem>0?rem+' regeneration'+(rem>1?'s':'')+' remaining':'Final version — approve or copy';
-  const strip=document.getElementById('meta-strip');
-  strip.innerHTML=`<span class="meta-chip mode-${data.mode}">${data.mode==='news'?'📰 News blog':'🚀 Product blog'}</span>`;
-  if(data.reading_time)strip.innerHTML+=`<span class="meta-chip time">⏱ ${data.reading_time}</span>`;
-  if(data.iteration>1)strip.innerHTML+=`<span class="meta-chip phase">↺ Iteration ${data.iteration}</span>`;
-  document.getElementById('blog-title').textContent=data.title||'Generated Blog';
-  const metaEl=document.getElementById('blog-meta-desc');
-  if(data.meta_description){metaEl.textContent=data.meta_description;metaEl.style.display='block';}else metaEl.style.display='none';
-  document.getElementById('blog-content').innerHTML=markdownToHtml(data.content||'');
-  const ctaBox=document.getElementById('cta-box');
-  if(data.target_cta){document.getElementById('cta-text').textContent=data.target_cta;ctaBox.style.display='block';}else ctaBox.style.display='none';
-  const kwRow=document.getElementById('keywords-row');
-  kwRow.innerHTML='';
-  if(data.seo_keywords&&data.seo_keywords.length){kwRow.innerHTML='<span class="kw-label">SEO</span>';data.seo_keywords.forEach(k=>{kwRow.innerHTML+=`<span class="kw-tag">${k}</span>`;});}
-  const srcSec=document.getElementById('sources-section');
-  const srcList=document.getElementById('sources-list');
-  if(data.sources&&data.sources.length){srcList.innerHTML=data.sources.map(s=>`<a href="${s.url}" target="_blank" class="source-link"><div class="source-link-title">${s.title}</div><div class="source-link-url">${s.url}</div></a>`).join('');srcSec.style.display='block';}else srcSec.style.display='none';
-  document.getElementById('empty-state').style.display='none';
-  document.getElementById('result').style.display='block';
-}
-
-function resetOutput(){
-  ['result','error-box','feedback-bar','approved-banner'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('quality-wrap').style.display='none';
-  document.getElementById('empty-state').style.display='none';
-}
-
-function setLoading(on,msg='Writing...'){
-  document.getElementById('gen-btn').disabled=on;
-  document.getElementById('spinner').style.display=on?'block':'none';
-  document.getElementById('btn-text').textContent=on?'Working...':'✦ Generate Blog';
-  document.getElementById('loading-overlay').style.display=on?'flex':'none';
-  document.getElementById('loading-msg').textContent=msg;
-}
-
-function showError(msg){
-  const el=document.getElementById('error-box');el.textContent='⚠ '+msg;el.style.display='block';
-  document.getElementById('empty-state').style.display='flex';
-}
-
-function markdownToHtml(md){
-  return md.replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`(.+?)`/g,'<code>$1</code>').replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>').replace(/^[-*] (.+)$/gm,'<li>$1</li>').split('\n\n').map(p=>p.startsWith('<h')||p.startsWith('<ul')||p.startsWith('<li')||p.startsWith('<blockquote')?p:`<p>${p}</p>`).join('');
-}
-
-function copyContent(){
-  if(!lastRaw)return;
-  navigator.clipboard.writeText(lastRaw).then(()=>{
-    const btn=document.querySelector('.copy-btn');btn.textContent='✓ Copied!';
-    setTimeout(()=>btn.textContent='⎘ Copy full blog as Markdown',2000);
-  });
-}
-
-document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')generateBlog();});
-</script>
-</body>
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") generateBlog();
+      });
+    </script>
+  </body>
 </html>

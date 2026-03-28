@@ -6,6 +6,10 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
+STABILITY_API_KEY = os.getenv("STABILITY_API_KEY")
+BRAND_TONE        = "professional and authoritative"
+BRAND_NAME        = "ET-AI"  # change to your actual brand name
+
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 MAX_REGENERATIONS = 3  # LangGraph retry limit
 
