@@ -4,10 +4,26 @@ $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $pythonExe = [System.IO.Path]::GetFullPath((Join-Path $projectRoot ".venv\Scripts\python.exe"))
 $backendUrl = "http://127.0.0.1:8000/api/health"
 $frontendUrl = "http://127.0.0.1:5500/index.html"
+$portsToClear = @(8000, 5500)
 
 if (-not (Test-Path $pythonExe)) {
     Write-Error "Python virtual environment not found at $pythonExe"
 }
+
+foreach ($port in $portsToClear) {
+    $listeners = netstat -ano | Select-String ":$port\s+.*LISTENING\s+(\d+)$"
+    foreach ($listener in $listeners) {
+        $procId = [int]$listener.Matches[0].Groups[1].Value
+        try {
+            Stop-Process -Id $procId -Force -ErrorAction Stop
+            Write-Host "Stopped existing process on port $port (PID $procId)"
+        } catch {
+            Write-Host "Could not stop PID $procId on port $port"
+        }
+    }
+}
+
+Start-Sleep -Seconds 1
 
 Write-Host "Starting backend on port 8000..."
 Start-Process powershell -ArgumentList @(

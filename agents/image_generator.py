@@ -278,7 +278,7 @@ class ImageGenerator:
             return None
 
         if isinstance(output, str):
-            return self._normalize_b64(output)
+            return self._extract_image_b64_from_string(output)
 
         if isinstance(output, list):
             for item in output:
@@ -306,6 +306,13 @@ class ImageGenerator:
 
         return None
 
+    def _extract_image_b64_from_string(self, value: str) -> str | None:
+        if not value:
+            return None
+        if value.startswith("http://") or value.startswith("https://"):
+            return self._download_image_as_b64(value)
+        return self._normalize_b64(value)
+
     def _normalize_b64(self, value: str) -> str | None:
         if not value or not isinstance(value, str):
             return None
@@ -313,6 +320,17 @@ class ImageGenerator:
             _, _, tail = value.partition(",")
             return tail or None
         return value
+
+    def _download_image_as_b64(self, url: str) -> str | None:
+        try:
+            resp = requests.get(url, timeout=90)
+            if resp.status_code != 200:
+                print(f"[ImageGenerator] Failed to download Bytez image {resp.status_code}: {url}")
+                return None
+            return base64.b64encode(resp.content).decode()
+        except Exception as exc:
+            print(f"[ImageGenerator] Failed to download Bytez image: {exc}")
+            return None
 
     def _shorten(self, value: str, limit: int) -> str:
         if not value:
