@@ -1,174 +1,291 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from graph.blog_graph import blog_graph, BlogState
-from agents.web_search import WebSearchAgent
-import sys, os
+"""
+ET-AI Content Engine — FastAPI Backend
+Connects the LangGraph blog_graph to the frontend UI.
+"""
+import uuid, time, threading, traceback
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from typing import Optional, List
+import os
 
-# In generate() and feedback(), add rag_validate step:
-from graph.blog_graph import (write_blog, validate_blog, rag_validate,
-                               review_blog, generate_images,
-                               generate_social_posts)
+app = FastAPI(title="ET-AI Content Engine", version="2.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+# Serve frontend
+if os.path.exists("frontend"):
+    app.mount("/app", StaticFiles(directory="frontend", html=True), name="frontend")
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-app = Flask(__name__)
-CORS(app)
+jobs = {}
 
-# In-memory session store (one blog at a time per server)
-current_state: dict = {}
+# ── Request models ──
+class GenerateRequest(BaseModel):
+    mode: str = "news"
+    topic: str
+    audience: str = "general professional audience"
+    length: int = 1000
+    context: str = ""
+    product_details: str = ""
+    key_features: str = ""
+    uvp: str = ""
+    generate_images: bool = True
+    image_formats: List[str] = ["blog", "instagram", "linkedin"]
+    social_platforms: List[str] = ["instagram", "linkedin"]
+    user_image_b64: Optional[str] = None
+    target_languages: List[str] = [] # FIXED: Added languages to the model
 
+class FeedbackRequest(BaseModel):
+    job_id: str
+    action: str  # "approve" or "refine"
+    feedback: str = ""
+    target_languages: List[str] = []
 
-@app.route('/generate', methods=['POST'])
-def generate():
-    global current_state
+class ScheduleRequest(BaseModel):
+    job_id: str
+    platform: str
+    time: str
+    note: str
+
+# ── Background pipeline runner ──
+def run_pipeline(job_id: str, req: GenerateRequest):
+    from graph.blog_graph import blog_graph, BlogState
+    from agents.web_search import WebSearchAgent
+
+    jobs[job_id]["status"] = "running"
+    jobs[job_id]["current_node"] = "write"
+
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No JSON payload received"}), 400
-
-        user_image_b64 = data.get("user_image_b64", None)
-            
-        mode = data.get('mode', 'news')   # 'news' or 'product'
-
-        print(f"[API] generate_images={data.get('generate_images')} formats={data.get('image_formats')}")
-
-        # Build search context (news mode only)
-        context = ""
+        context = req.context
         sources = []
-        if mode == "news":
-            searcher = WebSearchAgent()
-            result   = searcher.search(data.get('topic', ''))
-            context  = result["context"]
-            sources  = result["sources"]
+        if req.mode == "news":
+            jobs[job_id]["current_node"] = "web_search"
+            try:
+                searcher = WebSearchAgent()
+                result = searcher.search(req.topic)
+                context = result.get("context", req.context)
+                sources = result.get("sources", [])
+            except Exception as e:
+                print(f"[WebSearch] Error: {e} — continuing without search")
 
-        # Initial state
-        state: BlogState = {
-            "mode":            mode,
-            "topic":           data.get("topic", ""),
-            "audience":        data.get("audience", "general audience"),
-            "length":          int(data.get("length", 1000)),
-            "context":         context,
-            "product_details": data.get("product_details", ""),
-            "key_features":    data.get("key_features", ""),
-            "uvp":             data.get("uvp", ""),
-            "raw_blog":        "",
-            "parsed_blog":     {},
-            "quality_score":   0,
-            "quality_issues":  "",
-            "sources":         sources,
-            "human_feedback":  "",
-            "approved":        False,
-            "iteration":       0,
-            "generate_images": data.get("generate_images", False),
-            "image_formats":   data.get("image_formats", ["blog"]),
-            "review_verdict":  "",
-            "review_score":    0,
-            "review_checks":   {},
-            "review_fixes":    [],
-            "editor_note":     "",
-            "images":          {},
-            "rag_verdict":     "",
-            "rag_summary":     "",
+        initial_state: BlogState = {
+            "mode": req.mode,
+            "topic": req.topic,
+            "audience": req.audience,
+            "length": req.length,
+            "context": context,
+            "product_details": req.product_details,
+            "key_features": req.key_features,
+            "uvp": req.uvp,
+            "raw_blog": "",
+            "parsed_blog": {},
+            "quality_score": 0.0,
+            "quality_issues": "",
+            "sources": sources,
+            "rag_verdict": "",
+            "rag_summary": "",
             "rag_suggestions": [],
-            "rag_score":       0,
-            "social_platforms": data.get("social_platforms", []),
-            "social_posts":     {},
-            "user_image_b64":   user_image_b64,
+            "rag_score": 0.0,
+            "review_verdict": "",
+            "review_score": 0,
+            "review_checks": {},
+            "review_fixes": [],
+            "editor_note": "",
+            "images": {},
+            "generate_images": req.generate_images,
+            "image_formats": req.image_formats,
+            "user_image_b64": req.user_image_b64,
+            "social_posts": {},
+            "social_platforms": req.social_platforms,
+            "target_languages": req.target_languages, # FIXED: Pass languages to graph
+            "localized_content": {},                  # FIXED: Initialize dict
+            "human_feedback": "",
+            "approved": False,
+            "iteration": 0,
         }
 
-        # Run write + validate only (stop before human_review blocks)
-        from graph.blog_graph import write_blog, validate_blog, rag_validate, review_blog, generate_images, generate_social_posts
-        state = write_blog(state)
-        state = validate_blog(state)
-        state = rag_validate(state) 
-        state = review_blog(state)
-        state = generate_images(state)
-        state = generate_social_posts(state)
-        current_state = state
+        node_map = {
+            "write": "write",
+            "validate": "validate",
+            "rag_validate": "rag",
+            "review": "review",
+            "gen_images": "gen_images",
+            "gen_social": "gen_social",
+            "human_review": "human_review",
+        }
 
-        return jsonify(_state_to_response(state))
+        final_state = initial_state.copy()
+        for event in blog_graph.stream(initial_state):
+            for node_name, node_state in event.items():
+                jobs[job_id]["current_node"] = node_map.get(node_name, node_name)
+                if isinstance(node_state, dict):
+                    final_state.update(node_state)
+
+        jobs[job_id].update({
+            "status": "awaiting_human",
+            "current_node": "human_review",
+            "data": final_state,
+            "sources": sources,
+        })
+
     except Exception as e:
-        import traceback
-        print("\n!!! EXCEPTION IN /generate !!!")
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        jobs[job_id]["status"] = "error"
+        jobs[job_id]["error"] = str(e)
 
 
-@app.route('/feedback', methods=['POST'])
-def feedback():
-    """User submits feedback — AI regenerates with it."""
-    global current_state
-    data = request.get_json()
-    action   = data.get("action")    # "approve" or "regenerate"
-    feedback = data.get("feedback", "")
+def resume_pipeline(job_id: str):
+    from graph.blog_graph import blog_graph
 
-    if action == "approve":
-        current_state["approved"] = True
-        return jsonify({"message": "Blog approved!", "approved": True})
+    jobs[job_id]["status"] = "running"
+    job = jobs[job_id]
+    state = job["data"].copy()
+    state["human_feedback"] = job.get("pending_feedback", "")
+    state["approved"] = job.get("pending_action") == "approve"
 
-    # Regenerate with feedback
-    from graph.blog_graph import write_blog, validate_blog
-    current_state["human_feedback"] = feedback
-    current_state["approved"]       = False
-    current_state = write_blog(current_state)
-    current_state = validate_blog(current_state)
+    try:
+        final_state = state.copy()
+        for event in blog_graph.stream(state):
+            for node_name, node_state in event.items():
+                jobs[job_id]["current_node"] = node_name
+                if isinstance(node_state, dict):
+                    final_state.update(node_state)
 
-    return jsonify(_state_to_response(current_state))
+        jobs[job_id]["data"] = final_state
+        if state["approved"]:
+            jobs[job_id]["status"] = "completed"
+        else:
+            jobs[job_id]["status"] = "awaiting_human"
+
+    except Exception as e:
+        traceback.print_exc()
+        jobs[job_id]["status"] = "error"
+        jobs[job_id]["error"] = str(e)
 
 
-def _state_to_response(state: dict) -> dict:
-    p = state.get("parsed_blog", {})
+# ── API endpoints ──
+@app.post("/api/generate")
+def generate(req: GenerateRequest):
+    job_id = str(uuid.uuid4())
+    jobs[job_id] = {
+        "job_id": job_id,
+        "status": "starting",
+        "current_node": "starting",
+        "data": None,
+        "error": None,
+        "start_time": time.time(),
+    }
+    threading.Thread(target=run_pipeline, args=(job_id, req), daemon=True).start()
+    return {"job_id": job_id, "status": "started"}
 
 
-    # Convert saved images to base64 for frontend
-    images_out = {}
-    for fmt, img in state.get("images", {}).items():
-        images_out[fmt] = {
-            "base64": img.get("base64", ""),
-            "label":  img.get("label", fmt),
-            "width":  img.get("width", 1024),
-            "height": img.get("height", 576),
-        }
-    
-    # Social posts — strip image data for caption preview, keep b64 for display
-    social_out = {}
-    for platform, post in state.get("social_posts", {}).items():
-        if "error" not in post:
-            social_out[platform] = {
-                "caption":    post.get("caption") or post.get("post_text", ""),
-                "image_b64":  post.get("image_b64", ""),
-                "dimensions": post.get("dimensions", ""),
-                "platform":   platform,
-                "mode":       post.get("mode", ""),
-            }
-
+@app.get("/api/status/{job_id}")
+def get_status(job_id: str):
+    if job_id not in jobs:
+        raise HTTPException(404, "Job not found")
+    job = jobs[job_id]
+    d = job.get("data") or {}
+    elapsed = time.time() - job["start_time"]
     return {
-        "success":         True,
-        "mode":            state["mode"],
-        "title":           p.get("title", ""),
-        "meta_description":p.get("meta_description", ""),
-        "reading_time":    p.get("reading_time", ""),
-        "seo_keywords":    p.get("seo_keywords", []),
-        "target_cta":      p.get("target_cta", ""),
-        "content":         p.get("content", state.get("raw_blog", "")),
-        "sources":         state.get("sources", []),
-        "quality_score":   state.get("quality_score", 0),
-        "quality_issues":  state.get("quality_issues", ""),
-        "iteration":       state.get("iteration", 1),
-        "max_iterations":  3,
-        "rag_verdict":     state.get("rag_verdict", ""),
-        "rag_summary":     state.get("rag_summary", ""),
-        "rag_suggestions": state.get("rag_suggestions", []),
-        "rag_score":       state.get("rag_score", 0),
-        "review_verdict":   state.get("review_verdict", ""),
-        "review_score":     state.get("review_score", 0),
-        "review_checks":    state.get("review_checks", {}),
-        "review_fixes":     state.get("review_fixes", []),
-        "editor_note":      state.get("editor_note", ""),
-        "images":           images_out,
-        "social_posts":     social_out,
+        "job_id": job_id,
+        "status": job["status"],
+        "current_node": job["current_node"],
+        "elapsed": round(elapsed, 1),
+        "error": job.get("error"),
+        "raw_blog": d.get("raw_blog", ""),
+        "parsed_blog": d.get("parsed_blog", {}),
+        "quality_score": d.get("quality_score", 0),
+        "quality_issues": d.get("quality_issues", ""),
+        "sources": d.get("sources", []),
+        "rag_verdict": d.get("rag_verdict", ""),
+        "rag_summary": d.get("rag_summary", ""),
+        "rag_suggestions": d.get("rag_suggestions", []),
+        "rag_score": d.get("rag_score", 0),
+        "review_verdict": d.get("review_verdict", ""),
+        "review_score": d.get("review_score", 0),
+        "review_checks": d.get("review_checks", {}),
+        "review_fixes": d.get("review_fixes", []),
+        "editor_note": d.get("editor_note", ""),
+        "images": {k: {"base64": v.get("base64",""), "label": v.get("label",""), "width": v.get("width",0), "height": v.get("height",0)} for k, v in (d.get("images") or {}).items()},
+        "social_posts": {k: {"caption": v.get("caption", v.get("post_text", "")), "post_text": v.get("post_text", v.get("caption", "")), "image_b64": v.get("image_b64", ""), "size": v.get("size",""), "platform": v.get("platform", k)} for k, v in (d.get("social_posts") or {}).items()},
+        "localized_content": d.get("localized_content", {}), # FIXED: Expose translations to UI
+        "iteration": d.get("iteration", 0),
+        "approved": d.get("approved", False),
+        "mode": d.get("mode", ""),
+        "topic": d.get("topic", ""),
     }
 
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+@app.post("/api/feedback")
+def post_feedback(req: FeedbackRequest):
+    if req.job_id not in jobs:
+        raise HTTPException(404, "Job not found")
+    
+    jobs[req.job_id]["pending_action"] = req.action
+    jobs[req.job_id]["pending_feedback"] = req.feedback
+    
+    if req.action == "approve":
+        # FIXED: Tell the C++ engine to run manually now that it is approved!
+        if jobs[req.job_id].get("data"):
+            jobs[req.job_id]["data"]["approved"] = True
+            if req.target_languages:
+                jobs[req.job_id]["data"]["target_languages"] = req.target_languages
+                
+        jobs[req.job_id]["status"] = "running"
+        jobs[req.job_id]["current_node"] = "localize"
+        
+        def run_localization_process():
+            try:
+                from graph.blog_graph import run_localization
+                new_state = run_localization(jobs[req.job_id]["data"])
+                jobs[req.job_id]["data"] = new_state
+                jobs[req.job_id]["status"] = "completed"
+            except Exception as e:
+                traceback.print_exc()
+                jobs[req.job_id]["status"] = "error"
+                jobs[req.job_id]["error"] = str(e)
+                
+        threading.Thread(target=run_localization_process, daemon=True).start()
+    else:
+        threading.Thread(target=resume_pipeline, args=(req.job_id,), daemon=True).start()
+        
+    return {"status": "ok", "action": req.action}
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "version": "2.0.0"}
+
+@app.post("/api/schedule")
+def schedule_post_endpoint(req: ScheduleRequest):
+    from fastapi import HTTPException
+    if req.job_id not in jobs:
+        raise HTTPException(404, "Job not found")
+        
+    job = jobs[req.job_id]
+    d = job.get("data") or {}
+    
+    from agents.scheduler import SocialScheduler
+    scheduler = SocialScheduler()
+    
+    result = scheduler.schedule_post(
+        job_id=req.job_id,
+        platform=req.platform,
+        post_time=req.time,
+        note=req.note,
+        blog_data=d.get("parsed_blog") or {"topic": d.get("topic", "")},
+        social_data=d.get("social_posts", {})
+    )
+    
+    return result
+
+@app.get("/api/queue")
+def get_queue():
+    from agents.scheduler import get_scheduled_posts
+    return {"queue": get_scheduled_posts()}
+
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

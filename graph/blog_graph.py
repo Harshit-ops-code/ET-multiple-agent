@@ -61,6 +61,10 @@ class BlogState(TypedDict):
     human_feedback:   str
     approved:         bool
     iteration:        int
+    
+    # Localization (NEW)
+    target_languages: list
+    localized_content: dict
 
 
 # ── LLM instance ──────────────────────────────────────────────────
@@ -328,14 +332,14 @@ def generate_social_posts(state: BlogState) -> BlogState:
             },
             mode=state["mode"],
             platforms=platforms,
-            user_image_b64=state.get("user_image_b64"),   # ← only this line added
+            user_image_b64=state.get("user_image_b64"),   
         )
         return {**state, "social_posts": posts}
 
     except Exception as e:
         print(f"[LangGraph] generate_social_posts error: {e}")
         import traceback
-        traceback.print_exc()          # ← also add this so you see the real error
+        traceback.print_exc()          
         return {**state, "social_posts": {}}
 
 
@@ -345,6 +349,29 @@ def human_review(state: BlogState) -> BlogState:
     print(f"[LangGraph] human_review — quality={state.get('quality_score', 0):.0f}/100 "
           f"review={state.get('review_verdict', 'N/A')}")
     return state
+
+
+# ── Node: run_localization (NEW) ──────────────────────────────────
+def run_localization(state: BlogState) -> BlogState:
+    """Passes approved content to the C++ microservice for parallel translation."""
+    languages = state.get("target_languages", [])
+    
+    if not languages or not state.get("approved"):
+        print(f"[LangGraph] run_localization — skipped (no languages or not approved)")
+        return {**state, "localized_content": {}}
+
+    try:
+        from agents.localization_wrapper import LocalizationWrapper
+        wrapper = LocalizationWrapper()
+        
+        translations = wrapper.localize(
+            final_blog=state["raw_blog"], 
+            target_languages=languages
+        )
+        return {**state, "localized_content": translations}
+    except Exception as e:
+        print(f"[LangGraph] run_localization error: {e}")
+        return {**state, "localized_content": {}}
 
 
 # ── Router ────────────────────────────────────────────────────────
@@ -371,7 +398,7 @@ def should_continue(state: BlogState) -> Literal["refine", "done"]:
 def build_blog_graph():
     g = StateGraph(BlogState)
 
-    # Register all nodes — each name must be unique
+    # Register all nodes
     g.add_node("write",          write_blog)
     g.add_node("validate",       validate_blog)
     g.add_node("rag_validate",   rag_validate)
@@ -379,6 +406,7 @@ def build_blog_graph():
     g.add_node("gen_images",     generate_images)
     g.add_node("gen_social",     generate_social_posts)
     g.add_node("human_review",   human_review)
+    g.add_node("localize",       run_localization) # NEW NODE added here
 
     # Linear pipeline edges
     g.set_entry_point("write")
@@ -389,11 +417,14 @@ def build_blog_graph():
     g.add_edge("gen_images",   "gen_social")
     g.add_edge("gen_social",   "human_review")
 
-    # Conditional: human_review → refine loop OR done
+    # Conditional: human_review → refine loop OR proceed to localization
     g.add_conditional_edges("human_review", should_continue, {
         "refine": "write",
-        "done":   END,
+        "done":   "localize", # Routes to localization when done refining
     })
+    
+    # Finish the graph after localization
+    g.add_edge("localize", END)
 
     return g.compile()
 

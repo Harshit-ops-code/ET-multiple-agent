@@ -131,4 +131,4 @@ class BlogWriterAgent:
                 f.write(f"> {parsed['meta_description']}\n\n")
             f.write(parsed.get("content", parsed["raw"]))
 
-        print(f"[BlogWriterAgent] Saved to: {filename}")
+        print(f"[BlogWriterAgent] Saved to: {filename}")

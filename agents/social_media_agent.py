@@ -231,7 +231,8 @@ class SocialMediaAgent:
 
         # Key fact / stat highlight pill
         if key_fact:
-            fact_short = key_fact[:60] + "…" if len(key_fact) > 60 else key_fact
+            kf_clean = key_fact.replace("\\n", " ").replace("\\r", " ").strip()
+            fact_short = kf_clean[:60] + "…" if len(kf_clean) > 60 else kf_clean
             font_fact  = self._font(28, bold=True)
             bbox       = draw.textbbox((0, 0), fact_short, font=font_fact)
             fw         = bbox[2] - bbox[0]
@@ -250,11 +251,12 @@ class SocialMediaAgent:
         font_b = self._font(28)
         bullets = []
         if mode == "product" and key_features:
-            bullets = [f.strip() for f in key_features.split(",")][:3]
+            bullets = [f.strip().replace("\\n", " ") for f in re.split(r'[,\\n\\r]+', key_features) if f.strip()][:3]
             icons   = ["🚀", "💡", "🔒"]
         else:
             # Extract 2 short sentences from key_fact
-            bullets = [key_fact[:55]] if key_fact else []
+            kf_clean = key_fact.replace("\\n", " ").replace("\\r", " ").strip() if key_fact else ""
+            bullets = [kf_clean[:55]] if kf_clean else []
             icons   = ["📌"]
 
         y += 10
@@ -335,7 +337,8 @@ class SocialMediaAgent:
 
         # Stat / key fact box
         if key_fact:
-            fact_s = key_fact[:75] + "…" if len(key_fact) > 75 else key_fact
+            kf_clean = key_fact.replace("\\n", " ").replace("\\r", " ").strip()
+            fact_s = kf_clean[:75] + "…" if len(kf_clean) > 75 else kf_clean
             font_f = self._font(20, bold=True)
             y += 8
             draw.rounded_rectangle(
@@ -352,9 +355,10 @@ class SocialMediaAgent:
         font_b = self._font(20)
         bullets = []
         if mode == "product" and key_features:
-            bullets = [f.strip() for f in key_features.split(",")][:3]
+            bullets = [f.strip().replace("\\n", " ") for f in re.split(r'[,\\n\\r]+', key_features) if f.strip()][:3]
         elif key_fact:
-            bullets = [key_fact[:65]]
+            kf_clean = key_fact.replace("\\n", " ").replace("\\r", " ").strip()
+            bullets = [kf_clean[:65]]
 
         y += 4
         for b in bullets:

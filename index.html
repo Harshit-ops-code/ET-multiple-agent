@@ -1,1932 +1,1367 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ET-AI · Content Engine</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --bg: #0a0a0f;
-        --surface: #12121a;
-        --surface2: #1a1a26;
-        --border: #2a2a3d;
-        --accent: #7c6dfa;
-        --accent2: #fa6d8f;
-        --gold: #f0c060;
-        --teal: #2dd4bf;
-        --text: #e8e8f0;
-        --muted: #7a7a9a;
-        --success: #4ade80;
-        --danger: #f87171;
-        --radius: 12px;
-      }
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family: "Instrument Sans", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image:
-          linear-gradient(rgba(124, 109, 250, 0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(124, 109, 250, 0.03) 1px, transparent 1px);
-        background-size: 40px 40px;
-        pointer-events: none;
-        z-index: 0;
-      }
-      .orb {
-        position: fixed;
-        border-radius: 50%;
-        filter: blur(120px);
-        pointer-events: none;
-        z-index: 0;
-      }
-      .orb1 {
-        width: 500px;
-        height: 500px;
-        background: rgba(124, 109, 250, 0.08);
-        top: -100px;
-        left: -100px;
-      }
-      .orb2 {
-        width: 400px;
-        height: 400px;
-        background: rgba(250, 109, 143, 0.06);
-        bottom: -80px;
-        right: -80px;
-      }
-      .wrapper {
-        position: relative;
-        z-index: 1;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 24px;
-      }
-      header {
-        padding: 28px 0 20px;
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        border-bottom: 1px solid var(--border);
-      }
-      .logo-mark {
-        width: 38px;
-        height: 38px;
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: "DM Mono", monospace;
-        font-size: 12px;
-        font-weight: 500;
-        color: #fff;
-        flex-shrink: 0;
-      }
-      .logo-text {
-        font-family: "DM Serif Display", serif;
-        font-size: 20px;
-      }
-      .logo-text span {
-        color: var(--accent);
-      }
-      .phase-badge {
-        margin-left: auto;
-        font-family: "DM Mono", monospace;
-        font-size: 10px;
-        color: var(--accent);
-        background: rgba(124, 109, 250, 0.12);
-        border: 1px solid rgba(124, 109, 250, 0.25);
-        padding: 4px 10px;
-        border-radius: 20px;
-        letter-spacing: 0.5px;
-      }
-      .main-grid {
-        display: grid;
-        grid-template-columns: 400px 1fr;
-        gap: 20px;
-        padding: 24px 0 40px;
-        align-items: start;
-      }
-      @media (max-width: 880px) {
-        .main-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-      .mode-switch {
-        display: flex;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 4px;
-        margin-bottom: 18px;
-        gap: 4px;
-      }
-      .mode-btn {
-        flex: 1;
-        padding: 9px 8px;
-        border: none;
-        border-radius: 7px;
-        font-family: "Instrument Sans", sans-serif;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        background: transparent;
-        color: var(--muted);
-      }
-      .mode-btn.active {
-        background: var(--surface);
-        color: var(--text);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-      }
-      .mode-btn.active.news {
-        color: var(--gold);
-        border: 1px solid rgba(240, 192, 96, 0.2);
-      }
-      .mode-btn.active.product {
-        color: var(--teal);
-        border: 1px solid rgba(45, 212, 191, 0.2);
-      }
-      .panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        overflow: hidden;
-      }
-      .panel-header {
-        padding: 14px 18px;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--accent);
-        box-shadow: 0 0 7px var(--accent);
-      }
-      .panel-header h2 {
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.6px;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
-      .form-body {
-        padding: 18px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      label {
-        display: block;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.7px;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 6px;
-      }
-      input,
-      textarea {
-        width: 100%;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        color: var(--text);
-        font-family: "Instrument Sans", sans-serif;
-        font-size: 13px;
-        padding: 9px 12px;
-        outline: none;
-        transition:
-          border-color 0.2s,
-          box-shadow 0.2s;
-        resize: none;
-      }
-      input:focus,
-      textarea:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(124, 109, 250, 0.12);
-      }
-      textarea {
-        min-height: 72px;
-        line-height: 1.5;
-      }
-      .product-fields {
-        display: none;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .product-fields.show {
-        display: flex;
-      }
-      .field-divider {
-        height: 1px;
-        background: var(--border);
-      }
-      .range-wrap {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      input[type="range"] {
-        flex: 1;
-        padding: 0;
-        accent-color: var(--accent);
-        background: transparent;
-        border: none;
-        box-shadow: none;
-      }
-      input[type="range"]:focus {
-        box-shadow: none;
-        border: none;
-      }
-      .range-val {
-        font-family: "DM Mono", monospace;
-        font-size: 12px;
-        color: var(--accent);
-        min-width: 55px;
-        text-align: right;
-      }
-      .btn-generate {
-        width: 100%;
-        padding: 12px;
-        background: linear-gradient(135deg, var(--accent), #9b8dff);
-        border: none;
-        border-radius: 8px;
-        color: #fff;
-        font-family: "Instrument Sans", sans-serif;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition:
-          opacity 0.2s,
-          transform 0.15s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      }
-      .btn-generate:hover:not(:disabled) {
-        opacity: 0.88;
-        transform: translateY(-1px);
-      }
-      .btn-generate:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-        transform: none;
-      }
-      .spinner {
-        width: 15px;
-        height: 15px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: spin 0.7s linear infinite;
-        display: none;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .output-panel {
-        position: sticky;
-        top: 20px;
-      }
-      .empty-state {
-        padding: 50px 20px;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-      }
-      .empty-icon {
-        width: 50px;
-        height: 50px;
-        background: var(--surface2);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        margin-bottom: 4px;
-      }
-      .empty-state h3 {
-        font-family: "DM Serif Display", serif;
-        font-size: 17px;
-      }
-      .empty-state p {
-        font-size: 12px;
-        color: var(--muted);
-        max-width: 220px;
-        line-height: 1.6;
-      }
-      .quality-bar-wrap {
-        margin: 0 18px 14px;
-        padding: 12px 14px;
-        background: var(--surface2);
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        display: none;
-      }
-      .quality-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-      .quality-label {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.6px;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
-      .quality-score {
-        font-family: "DM Mono", monospace;
-        font-size: 14px;
-        font-weight: 500;
-      }
-      .quality-track {
-        height: 5px;
-        background: var(--border);
-        border-radius: 3px;
-        overflow: hidden;
-      }
-      .quality-fill {
-        height: 100%;
-        border-radius: 3px;
-        transition:
-          width 0.6s ease,
-          background 0.4s;
-      }
-      .quality-issues {
-        margin-top: 7px;
-        font-size: 11px;
-        color: var(--danger);
-        line-height: 1.5;
-      }
-      .feedback-bar {
-        margin: 0 18px 14px;
-        padding: 14px;
-        background: rgba(124, 109, 250, 0.06);
-        border: 1px solid rgba(124, 109, 250, 0.18);
-        border-radius: 8px;
-        display: none;
-      }
-      .feedback-bar h4 {
-        font-size: 11px;
-        font-weight: 600;
-        color: var(--accent);
-        margin-bottom: 10px;
-        letter-spacing: 0.4px;
-        text-transform: uppercase;
-      }
-      .feedback-bar textarea {
-        min-height: 60px;
-        font-size: 12px;
-        margin-bottom: 10px;
-      }
-      .feedback-actions {
-        display: flex;
-        gap: 8px;
-      }
-      .btn-approve {
-        flex: 1;
-        padding: 9px;
-        background: rgba(74, 222, 128, 0.12);
-        border: 1px solid rgba(74, 222, 128, 0.3);
-        border-radius: 7px;
-        color: var(--success);
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      .btn-approve:hover {
-        background: rgba(74, 222, 128, 0.2);
-      }
-      .btn-regen {
-        flex: 1;
-        padding: 9px;
-        background: rgba(250, 109, 143, 0.1);
-        border: 1px solid rgba(250, 109, 143, 0.25);
-        border-radius: 7px;
-        color: var(--accent2);
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
-      .btn-regen:hover {
-        background: rgba(250, 109, 143, 0.18);
-      }
-      .iter-badge {
-        font-family: "DM Mono", monospace;
-        font-size: 10px;
-        color: var(--muted);
-        text-align: center;
-        margin-top: 7px;
-      }
-      #result {
-        display: none;
-        padding: 16px 18px;
-      }
-      .meta-strip {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 7px;
-        margin-bottom: 16px;
-      }
-      .meta-chip {
-        font-family: "DM Mono", monospace;
-        font-size: 10px;
-        padding: 3px 9px;
-        border-radius: 20px;
-        border: 1px solid;
-      }
-      .meta-chip.time {
-        color: var(--gold);
-        border-color: rgba(240, 192, 96, 0.3);
-        background: rgba(240, 192, 96, 0.08);
-      }
-      .meta-chip.mode-news {
-        color: var(--gold);
-        border-color: rgba(240, 192, 96, 0.3);
-        background: rgba(240, 192, 96, 0.08);
-      }
-      .meta-chip.mode-product {
-        color: var(--teal);
-        border-color: rgba(45, 212, 191, 0.3);
-        background: rgba(45, 212, 191, 0.08);
-      }
-      .meta-chip.phase {
-        color: var(--accent);
-        border-color: rgba(124, 109, 250, 0.3);
-        background: rgba(124, 109, 250, 0.08);
-      }
-      .blog-title {
-        font-family: "DM Serif Display", serif;
-        font-size: 24px;
-        line-height: 1.3;
-        margin-bottom: 8px;
-      }
-      .blog-meta-desc {
-        font-size: 12px;
-        color: var(--muted);
-        line-height: 1.6;
-        padding: 10px 12px;
-        background: var(--surface2);
-        border-left: 3px solid var(--accent);
-        border-radius: 0 6px 6px 0;
-        margin-bottom: 16px;
-      }
-      .divider {
-        height: 1px;
-        background: var(--border);
-        margin: 14px 0;
-      }
-      .blog-content {
-        font-size: 13px;
-        line-height: 1.8;
-        color: #c8c8e0;
-        max-height: 460px;
-        overflow-y: auto;
-        padding-right: 4px;
-      }
-      .blog-content::-webkit-scrollbar {
-        width: 3px;
-      }
-      .blog-content::-webkit-scrollbar-thumb {
-        background: var(--border);
-        border-radius: 3px;
-      }
-      .blog-content h1,
-      .blog-content h2 {
-        font-family: "DM Serif Display", serif;
-        color: var(--text);
-        margin: 18px 0 7px;
-      }
-      .blog-content h1 {
-        font-size: 18px;
-      }
-      .blog-content h2 {
-        font-size: 16px;
-      }
-      .blog-content h3 {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text);
-        margin: 14px 0 5px;
-      }
-      .blog-content p {
-        margin-bottom: 10px;
-      }
-      .blog-content strong {
-        color: var(--text);
-        font-weight: 600;
-      }
-      .blog-content em {
-        color: var(--gold);
-        font-style: italic;
-      }
-      .blog-content ul,
-      .blog-content ol {
-        padding-left: 18px;
-        margin-bottom: 10px;
-      }
-      .blog-content li {
-        margin-bottom: 4px;
-      }
-      .blog-content code {
-        font-family: "DM Mono", monospace;
-        font-size: 11px;
-        background: var(--surface2);
-        padding: 2px 5px;
-        border-radius: 4px;
-        color: var(--accent2);
-      }
-      .blog-content blockquote {
-        border-left: 3px solid var(--accent);
-        padding-left: 12px;
-        margin: 10px 0;
-        color: var(--muted);
-        font-style: italic;
-      }
-      .cta-box {
-        margin-top: 12px;
-        padding: 10px 14px;
-        background: rgba(45, 212, 191, 0.07);
-        border: 1px solid rgba(45, 212, 191, 0.2);
-        border-radius: 8px;
-        font-size: 12px;
-        color: var(--teal);
-        display: none;
-      }
-      .cta-box strong {
-        display: block;
-        margin-bottom: 3px;
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      .keywords-row {
-        margin-top: 14px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        align-items: center;
-      }
-      .kw-label {
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        color: var(--muted);
-        margin-right: 2px;
-      }
-      .kw-tag {
-        font-family: "DM Mono", monospace;
-        font-size: 10px;
-        background: rgba(74, 222, 128, 0.08);
-        border: 1px solid rgba(74, 222, 128, 0.2);
-        color: var(--success);
-        padding: 3px 8px;
-        border-radius: 20px;
-      }
-      .sources-section {
-        margin-top: 14px;
-        display: none;
-      }
-      .sources-label {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.6px;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 7px;
-      }
-      .source-link {
-        display: block;
-        padding: 7px 10px;
-        margin-bottom: 5px;
-        background: rgba(124, 109, 250, 0.06);
-        border: 1px solid rgba(124, 109, 250, 0.12);
-        border-radius: 6px;
-        text-decoration: none;
-        color: var(--text);
-        font-size: 11px;
-        transition: border-color 0.15s;
-      }
-      .source-link:hover {
-        border-color: rgba(124, 109, 250, 0.3);
-      }
-      .source-link-title {
-        font-weight: 600;
-        color: #e8e8f0;
-        margin-bottom: 2px;
-      }
-      .source-link-url {
-        color: var(--muted);
-        font-size: 10px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .copy-btn {
-        margin-top: 14px;
-        width: 100%;
-        padding: 9px;
-        background: transparent;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        color: var(--muted);
-        font-family: "Instrument Sans", sans-serif;
-        font-size: 12px;
-        cursor: pointer;
-        transition:
-          border-color 0.2s,
-          color 0.2s;
-      }
-      .copy-btn:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-      .error-box {
-        margin: 16px;
-        padding: 12px 14px;
-        background: rgba(250, 109, 143, 0.08);
-        border: 1px solid rgba(250, 109, 143, 0.25);
-        border-radius: 8px;
-        font-size: 12px;
-        color: var(--accent2);
-        display: none;
-      }
-      .loading-overlay {
-        padding: 50px 20px;
-        text-align: center;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        gap: 14px;
-      }
-      .loading-dots {
-        display: flex;
-        gap: 5px;
-      }
-      .loading-dots span {
-        width: 7px;
-        height: 7px;
-        background: var(--accent);
-        border-radius: 50%;
-        animation: pulse 1.2s ease-in-out infinite;
-      }
-      .loading-dots span:nth-child(2) {
-        animation-delay: 0.2s;
-      }
-      .loading-dots span:nth-child(3) {
-        animation-delay: 0.4s;
-      }
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 0.2;
-          transform: scale(0.8);
-        }
-        50% {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-      .loading-overlay p {
-        font-size: 12px;
-        color: var(--muted);
-      }
-      .loading-overlay strong {
-        font-family: "DM Serif Display", serif;
-        font-size: 15px;
-        color: var(--text);
-        display: block;
-        margin-bottom: 3px;
-      }
-      .approved-banner {
-        margin: 0 18px 14px;
-        padding: 10px 14px;
-        background: rgba(74, 222, 128, 0.1);
-        border: 1px solid rgba(74, 222, 128, 0.25);
-        border-radius: 8px;
-        font-size: 13px;
-        color: var(--success);
-        font-weight: 600;
-        display: none;
-        text-align: center;
-      }
-      footer {
-        border-top: 1px solid var(--border);
-        padding: 16px 0;
-        font-family: "DM Mono", monospace;
-        font-size: 10px;
-        color: var(--muted);
-        display: flex;
-        align-items: center;
-        gap: 14px;
-      }
-      .status-dot {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: var(--success);
-        box-shadow: 0 0 5px var(--success);
-        display: inline-block;
-        margin-right: 5px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="orb orb1"></div>
-    <div class="orb orb2"></div>
-    <div class="wrapper">
-      <header>
-        <div class="logo-mark">ET</div>
-        <div class="logo-text">ET<span>-AI</span> Content Engine</div>
-        <div class="phase-badge">LANGGRAPH · PHASE 1.5</div>
-      </header>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ET-AI · Content Intelligence Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#080810;--surface:#0f0f1a;--surface2:#161625;--surface3:#1d1d2e;
+  --border:#252538;--border2:#30304a;
+  --accent:#7c6dfa;--accent2:#fa6d8f;--gold:#f0c060;--teal:#2dd4bf;
+  --green:#4ade80;--red:#f87171;--blue:#60a5fa;--orange:#fb923c;
+  --text:#e8e8f2;--muted:#6b6b8a;--muted2:#9090b0;
+  --font-serif:'DM Serif Display',serif;
+  --font-mono:'DM Mono',monospace;
+  --font-sans:'Instrument Sans',sans-serif;
+  --r:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
 
-      <div class="main-grid">
-        <div class="panel">
-          <div class="panel-header">
-            <div class="dot"></div>
-            <h2>Content Parameters</h2>
-          </div>
-          <div class="form-body">
-            <div>
-              <label>Blog Mode</label>
-              <div class="mode-switch">
-                <button class="mode-btn news active" onclick="setMode('news')">
-                  📰 News / Topic Blog
-                </button>
-                <button class="mode-btn product" onclick="setMode('product')">
-                  🚀 Product Launch Blog
-                </button>
-              </div>
-            </div>
+/* Background grid */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,109,250,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(124,109,250,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
+.orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;}
+.orb1{width:600px;height:600px;background:rgba(124,109,250,.07);top:-180px;left:-120px;}
+.orb2{width:500px;height:500px;background:rgba(250,109,143,.05);bottom:-100px;right:-100px;}
+.orb3{width:300px;height:300px;background:rgba(45,212,191,.04);top:50%;left:50%;transform:translate(-50%,-50%);}
 
-            <div>
-              <label id="topic-label">Topic / Idea *</label>
-              <textarea
-                id="topic"
-                rows="2"
-                placeholder="e.g. Why AI is changing content marketing"
-              ></textarea>
-            </div>
+.app{position:relative;z-index:1;display:grid;grid-template-rows:auto 1fr auto;min-height:100vh;}
 
-            <div>
-              <label>Target Audience</label>
-              <input
-                id="audience"
-                type="text"
-                placeholder="e.g. startup founders, B2B marketers"
-              />
-            </div>
+/* ── HEADER ── */
+header{
+  border-bottom:1px solid var(--border);
+  padding:0 28px;
+  height:60px;
+  display:flex;align-items:center;gap:16px;
+  background:rgba(8,8,16,.85);
+  backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:200;
+}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-mark{
+  width:34px;height:34px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:11px;font-weight:500;color:#fff;flex-shrink:0;
+}
+.logo-name{font-family:var(--font-serif);font-size:18px;letter-spacing:-.01em;}
+.logo-name span{color:var(--accent);}
+.header-center{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;}
+.pipeline-crumb{
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--font-mono);font-size:10px;color:var(--muted);
+}
+.crumb{padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--surface);transition:all .3s;}
+.crumb.active{color:var(--accent);border-color:rgba(124,109,250,.4);background:rgba(124,109,250,.08);}
+.crumb.done{color:var(--green);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.06);}
+.crumb-sep{color:var(--border2);}
+.header-right{display:flex;align-items:center;gap:10px;}
+.status-pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
 
-            <div id="news-fields">
-              <div>
-                <label>Additional Context</label>
-                <textarea
-                  id="context"
-                  rows="2"
-                  placeholder="Specific angle, tone, or focus..."
-                ></textarea>
-              </div>
-            </div>
+/* ── MAIN LAYOUT ── */
+.main{display:grid;grid-template-columns:360px 1fr;gap:0;height:calc(100vh - 60px);}
 
-            <div class="product-fields" id="product-fields">
-              <div class="field-divider"></div>
-              <div>
-                <label>Product Description *</label>
-                <textarea
-                  id="product_details"
-                  rows="3"
-                  placeholder="What does your product do? What problem does it solve?"
-                ></textarea>
-              </div>
-              <div>
-                <label>Key Features</label>
-                <textarea
-                  id="key_features"
-                  rows="2"
-                  placeholder="e.g. Real-time sync, AI-powered, No-code setup"
-                ></textarea>
-              </div>
-              <div>
-                <label>Unique Value Proposition</label>
-                <input
-                  id="uvp"
-                  type="text"
-                  placeholder="e.g. 10x faster than manual content creation"
-                />
-              </div>
-            </div>
+/* ── LEFT SIDEBAR ── */
+.sidebar{
+  border-right:1px solid var(--border);
+  background:var(--surface);
+  overflow-y:auto;
+  display:flex;flex-direction:column;
+}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 
-            <div>
-              <label>Word Count</label>
-              <div class="range-wrap">
-                <input
-                  type="range"
-                  id="length"
-                  min="300"
-                  max="2000"
-                  step="100"
-                  value="1000"
-                  oninput="
-                    document.getElementById('length-val').textContent =
-                      this.value + ' words'
-                  "
-                />
-                <span class="range-val" id="length-val">1000 words</span>
-              </div>
-            </div>
+.sidebar-section{padding:16px 18px;border-bottom:1px solid var(--border);}
+.section-label{
+  font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
 
-            <!-- Image generation toggle -->
-            <div
-              style="
-                padding: 12px 14px;
-                background: var(--surface2);
-                border: 1px solid var(--border);
-                border-radius: 8px;
-              "
-            >
-              <div
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: space-between;
-                  margin-bottom: 10px;
-                "
-              >
-                <label
-                  style="
-                    margin: 0;
-                    color: var(--text);
-                    font-size: 12px;
-                    text-transform: none;
-                    letter-spacing: 0;
-                  "
-                >
-                  Generate images with blog
-                </label>
-                <label
-                  style="
-                    position: relative;
-                    width: 36px;
-                    height: 20px;
-                    cursor: pointer;
-                  "
-                >
-                  <input
-                    type="checkbox"
-                    id="gen-images-toggle"
-                    onchange="toggleImageOptions(this.checked)"
-                    style="
-                      position: absolute;
-                      opacity: 0;
-                      width: 100%;
-                      height: 100%;
-                      cursor: pointer;
-                      margin: 0;
-                    "
-                  />
-                  <span
-                    id="toggle-track"
-                    style="
-                      position: absolute;
-                      inset: 0;
-                      background: var(--border);
-                      border-radius: 10px;
-                      transition: background 0.2s;
-                    "
-                  ></span>
-                  <span
-                    id="toggle-thumb"
-                    style="
-                      position: absolute;
-                      top: 2px;
-                      left: 2px;
-                      width: 16px;
-                      height: 16px;
-                      background: #fff;
-                      border-radius: 50%;
-                      transition: transform 0.2s;
-                      pointer-events: none;
-                    "
-                  ></span>
-                </label>
-              </div>
+/* Mode switch */
+.mode-switch{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:3px;gap:3px;}
+.mode-btn{
+  flex:1;padding:8px 6px;border:none;border-radius:6px;cursor:pointer;transition:all .2s;
+  background:transparent;color:var(--muted);font-family:var(--font-sans);font-size:11px;font-weight:600;
+}
+.mode-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.5);}
+.mode-btn.active.news{color:var(--gold);border:1px solid rgba(240,192,96,.25);}
+.mode-btn.active.product{color:var(--teal);border:1px solid rgba(45,212,191,.25);}
 
-              <div id="image-format-options" style="display: none">
-                <label style="margin-bottom: 6px">Image formats</label>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap">
-                  <label
-                    style="
-                      display: flex;
-                      align-items: center;
-                      gap: 5px;
-                      text-transform: none;
-                      letter-spacing: 0;
-                      font-size: 12px;
-                      color: var(--text);
-                      cursor: pointer;
-                    "
-                  >
-                    <input
-                      type="checkbox"
-                      id="fmt-blog"
-                      checked
-                      style="width: auto; margin: 0"
-                    />
-                    Blog hero
-                  </label>
-                  <label
-                    style="
-                      display: flex;
-                      align-items: center;
-                      gap: 5px;
-                      text-transform: none;
-                      letter-spacing: 0;
-                      font-size: 12px;
-                      color: var(--text);
-                      cursor: pointer;
-                    "
-                  >
-                    <input
-                      type="checkbox"
-                      id="fmt-instagram"
-                      style="width: auto; margin: 0"
-                    />
-                    Instagram
-                  </label>
-                  <label
-                    style="
-                      display: flex;
-                      align-items: center;
-                      gap: 5px;
-                      text-transform: none;
-                      letter-spacing: 0;
-                      font-size: 12px;
-                      color: var(--text);
-                      cursor: pointer;
-                    "
-                  >
-                    <input
-                      type="checkbox"
-                      id="fmt-linkedin"
-                      style="width: auto; margin: 0"
-                    />
-                    LinkedIn
-                  </label>
-                </div>
-              </div>
-            </div>
+/* Form elements */
+label.field-label{
+  display:block;font-size:10px;font-weight:600;letter-spacing:.7px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px;
+}
+input,textarea,select{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);font-family:var(--font-sans);font-size:12px;
+  padding:8px 11px;outline:none;transition:border-color .2s,box-shadow .2s;resize:none;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,109,250,.1);}
+textarea{line-height:1.5;}
+select option{background:var(--surface2);}
 
-            <!-- Social media platforms -->
-            <div
-              style="
-                padding: 12px 14px;
-                background: var(--surface2);
-                border: 1px solid var(--border);
-                border-radius: 8px;
-              "
-            >
-              <label style="margin-bottom: 8px"
-                >Generate social media posts</label
-              >
-              <div style="display: flex; gap: 10px">
-                <label
-                  style="
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    text-transform: none;
-                    letter-spacing: 0;
-                    font-size: 13px;
-                    color: var(--text);
-                    cursor: pointer;
-                    padding: 8px 12px;
-                    background: var(--surface);
-                    border: 1px solid var(--border);
-                    border-radius: 8px;
-                    flex: 1;
-                    justify-content: center;
-                  "
-                  id="insta-label"
-                >
-                  <input
-                    type="checkbox"
-                    id="platform-instagram"
-                    onchange="togglePlatform('instagram', this.checked)"
-                    style="width: auto; margin: 0"
-                  />
-                  <span>📸 Instagram</span>
-                </label>
-                <label
-                  style="
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    text-transform: none;
-                    letter-spacing: 0;
-                    font-size: 13px;
-                    color: var(--text);
-                    cursor: pointer;
-                    padding: 8px 12px;
-                    background: var(--surface);
-                    border: 1px solid var(--border);
-                    border-radius: 8px;
-                    flex: 1;
-                    justify-content: center;
-                  "
-                  id="li-label"
-                >
-                  <input
-                    type="checkbox"
-                    id="platform-linkedin"
-                    onchange="togglePlatform('linkedin', this.checked)"
-                    style="width: auto; margin: 0"
-                  />
-                  <span>💼 LinkedIn</span>
-                </label>
-              </div>
-            </div>
+.field-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.field-group:last-child{margin-bottom:0;}
 
-            <!-- User image upload for social posts -->
-            <div
-              id="social-image-upload"
-              style="display: none; margin-top: 10px"
-            >
-              <label>Upload your own image (optional)</label>
-              <div
-                style="
-                  position: relative;
-                  border: 2px dashed var(--border);
-                  border-radius: 8px;
-                  padding: 16px;
-                  text-align: center;
-                  cursor: pointer;
-                  transition: border-color 0.2s;
-                "
-                id="upload-zone"
-                ondragover="
-                  event.preventDefault();
-                  this.style.borderColor = 'var(--accent)';
-                "
-                ondragleave="this.style.borderColor = 'var(--border)'"
-                ondrop="handleDrop(event)"
-              >
-                <input
-                  type="file"
-                  id="user-image-input"
-                  accept="image/*"
-                  style="
-                    position: absolute;
-                    inset: 0;
-                    opacity: 0;
-                    cursor: pointer;
-                  "
-                  onchange="handleImageUpload(this)"
-                />
-                <div id="upload-placeholder">
-                  <div style="font-size: 24px; margin-bottom: 6px">📁</div>
-                  <div style="font-size: 12px; color: var(--muted)">
-                    Drag & drop or click to upload<br />
-                    <span style="font-size: 11px"
-                      >PNG, JPG — will be used as post background</span
-                    >
-                  </div>
-                </div>
-                <div id="upload-preview" style="display: none">
-                  <img
-                    id="preview-img"
-                    style="
-                      max-height: 80px;
-                      border-radius: 6px;
-                      margin-bottom: 6px;
-                    "
-                  />
-                  <div
-                    style="font-size: 11px; color: var(--success)"
-                    id="upload-filename"
-                  ></div>
-                  <button
-                    onclick="clearUpload(event)"
-                    style="
-                      margin-top: 4px;
-                      font-size: 11px;
-                      color: var(--danger);
-                      background: none;
-                      border: none;
-                      cursor: pointer;
-                    "
-                  >
-                    ✕ Remove
-                  </button>
-                </div>
-              </div>
-            </div>
+/* Range slider */
+.range-row{display:flex;align-items:center;gap:10px;}
+input[type=range]{flex:1;padding:0;accent-color:var(--accent);background:transparent;border:none;box-shadow:none;}
+input[type=range]:focus{box-shadow:none;border:none;}
+.range-val{font-family:var(--font-mono);font-size:11px;color:var(--accent);min-width:55px;text-align:right;}
 
-            <button class="btn-generate" id="gen-btn" onclick="generateBlog()">
-              <div class="spinner" id="spinner"></div>
-              <span id="btn-text">✦ Generate Blog</span>
-            </button>
-          </div>
-        </div>
+/* Toggle switch */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;}
+.toggle-label{font-size:12px;color:var(--text);}
+.toggle{position:relative;width:38px;height:20px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{
+  position:absolute;inset:0;background:var(--border2);border-radius:10px;cursor:pointer;transition:.2s;
+}
+.toggle-slider::before{
+  content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;
+  background:#fff;border-radius:50%;transition:.2s;
+}
+input:checked+.toggle-slider{background:var(--accent);}
+input:checked+.toggle-slider::before{transform:translateX(18px);}
 
-        <div class="panel output-panel">
-          <div class="panel-header">
-            <div
-              class="dot"
-              style="
-                background: var(--accent2);
-                box-shadow: 0 0 7px var(--accent2);
-              "
-            ></div>
-            <h2>Generated Content</h2>
-          </div>
+/* Checkbox group */
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.check-item{
+  display:flex;align-items:center;gap:7px;padding:7px 9px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+  cursor:pointer;font-size:11px;transition:all .15s;
+}
+.check-item:hover{border-color:var(--border2);}
+.check-item.checked{border-color:rgba(124,109,250,.4);background:rgba(124,109,250,.07);color:var(--accent);}
+.check-item input{display:none;}
 
-          <div class="empty-state" id="empty-state">
-            <div class="empty-icon">✦</div>
-            <h3>Ready to write</h3>
-            <p>Choose your mode, fill in the details, then generate.</p>
-          </div>
+/* Image upload area */
+.upload-area{
+  border:1px dashed var(--border2);border-radius:7px;padding:14px;
+  text-align:center;cursor:pointer;transition:all .2s;font-size:11px;color:var(--muted);
+}
+.upload-area:hover{border-color:var(--accent);color:var(--accent);}
+.upload-area.has-file{border-color:var(--green);color:var(--green);background:rgba(74,222,128,.05);}
 
-          <div class="loading-overlay" id="loading-overlay">
-            <div class="loading-dots">
-              <span></span><span></span><span></span>
-            </div>
-            <div>
-              <strong id="loading-msg">Writing your blog...</strong>
-              <p>LangGraph · Groq · LLaMA 3.3</p>
-            </div>
-          </div>
+/* Generate button */
+.btn-generate{
+  width:100%;padding:11px;
+  background:linear-gradient(135deg,var(--accent),#9b8dff);
+  border:none;border-radius:8px;color:#fff;
+  font-family:var(--font-sans);font-size:13px;font-weight:600;
+  cursor:pointer;transition:opacity .2s,transform .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-generate:hover:not(:disabled){opacity:.88;transform:translateY(-1px);}
+.btn-generate:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-          <div class="error-box" id="error-box"></div>
-          <div class="approved-banner" id="approved-banner">
-            ✓ Blog Approved — ready to publish!
-          </div>
+/* ── RIGHT PANEL ── */
+.output{
+  background:var(--bg);
+  overflow-y:auto;
+  display:flex;flex-direction:column;
+}
+.output::-webkit-scrollbar{width:4px;}
+.output::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
 
-          <div
-            class="rag-panel"
-            id="rag-panel"
-            style="
-              display: none;
-              margin: 0 18px 14px;
-              padding: 12px 14px;
-              background: var(--surface2);
-              border-radius: 8px;
-              border: 1px solid var(--border);
-            "
-          >
-            <div
-              style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 8px;
-              "
-            >
-              <span
-                style="
-                  font-size: 11px;
-                  font-weight: 600;
-                  letter-spacing: 0.6px;
-                  text-transform: uppercase;
-                  color: var(--muted);
-                "
-                >RAG Fact Check</span
-              >
-              <span
-                id="rag-verdict-badge"
-                style="
-                  font-family: &quot;DM Mono&quot;, monospace;
-                  font-size: 10px;
-                  padding: 3px 9px;
-                  border-radius: 20px;
-                  border: 1px solid;
-                "
-              ></span>
-            </div>
-            <div
-              id="rag-summary"
-              style="
-                font-size: 12px;
-                color: var(--muted);
-                margin-bottom: 8px;
-                line-height: 1.5;
-              "
-            ></div>
-            <div
-              id="rag-suggestions"
-              style="font-size: 11px; color: #c8c8e0; line-height: 1.7"
-            ></div>
-          </div>
+/* Empty state */
+.empty-state{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:14px;padding:40px;
+}
+.empty-icon{
+  width:64px;height:64px;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;
+}
+.empty-state h3{font-family:var(--font-serif);font-size:20px;text-align:center;}
+.empty-state p{font-size:12px;color:var(--muted);max-width:280px;line-height:1.7;text-align:center;}
+.empty-features{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+.empty-feature{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted2);}
+.empty-feature-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);flex-shrink:0;}
 
-          <div class="quality-bar-wrap" id="quality-wrap">
-            <div class="quality-header">
-              <span class="quality-label">Quality Score</span>
-              <span class="quality-score" id="quality-score-val">—</span>
-            </div>
-            <div class="quality-track">
-              <div
-                class="quality-fill"
-                id="quality-fill"
-                style="width: 0%"
-              ></div>
-            </div>
-            <div class="quality-issues" id="quality-issues"></div>
-          </div>
+/* Loading */
+.loading-state{
+  flex:1;display:none;flex-direction:column;align-items:center;
+  justify-content:center;gap:20px;padding:40px;
+}
+.loading-ring{
+  width:64px;height:64px;border:3px solid transparent;
+  border-top-color:var(--accent);border-bottom-color:#9b8dff;
+  border-radius:50%;position:relative;
+  animation:spin 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  box-shadow:0 0 15px rgba(124,109,250,0.2);
+}
+.loading-ring::before{
+  content:'';position:absolute;top:4px;left:4px;right:4px;bottom:4px;
+  border:3px solid transparent;border-right-color:var(--green);border-left-color:var(--gold);
+  border-radius:50%;animation:spin 2.5s linear infinite reverse;
+}
+.loading-title{font-family:var(--font-serif);font-size:18px;background:linear-gradient(90deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.loading-step{font-size:11px;color:var(--muted);font-family:var(--font-mono);letter-spacing:0.5px;}
+.loading-step::after{content:'';animation:blink 1s step-end infinite;}
+@keyframes blink{50%{opacity:0;content:'...';}0%,100%{content:'.';}25%{content:'..';}}
+@keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(124,109,250,0.5);}70%{box-shadow:0 0 0 8px rgba(124,109,250,0);}100%{box-shadow:0 0 0 0 rgba(124,109,250,0);}}
+.loading-nodes{display:flex;gap:8px;margin-top:12px;position:relative;}
+.loading-node{
+  padding:5px 12px;border-radius:20px;font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:1px;
+  border:1px solid var(--border);color:var(--muted);transition:all .4s;background:var(--surface);
+}
+.loading-node.active{border-color:var(--accent);color:var(--accent);background:rgba(124,109,250,.15);animation:pulseGlow 1.5s infinite;}
+.loading-node.done{border-color:rgba(74,222,128,.4);color:var(--green);background:rgba(74,222,128,.06);text-shadow:0 0 8px rgba(74,222,128,.4);}
 
-          <div class="feedback-bar" id="feedback-bar">
-            <h4>Human Review — Iteration <span id="iter-num">1</span> / 3</h4>
-            <textarea
-              id="feedback-text"
-              placeholder="What should be improved? e.g. 'Make the intro more punchy' or 'Add more stats'..."
-            ></textarea>
-            <div class="feedback-actions">
-              <button class="btn-approve" onclick="submitFeedback('approve')">
-                ✓ Approve
-              </button>
-              <button class="btn-regen" onclick="submitFeedback('regenerate')">
-                ↺ Regenerate
-              </button>
-            </div>
-            <div class="iter-badge" id="iter-badge"></div>
-          </div>
+/* ── RESULT ── */
+.result-wrap{display:none;flex-direction:column;gap:0;}
 
-          <div id="result">
-            <div class="meta-strip" id="meta-strip"></div>
-            <div class="blog-title" id="blog-title"></div>
-            <div class="blog-meta-desc" id="blog-meta-desc"></div>
-            <div class="divider"></div>
-            <div class="blog-content" id="blog-content"></div>
-            <div class="cta-box" id="cta-box">
-              <strong>Call to Action</strong><span id="cta-text"></span>
-            </div>
-            <div class="keywords-row" id="keywords-row"></div>
-            <div class="sources-section" id="sources-section">
-              <div class="sources-label">Sources used</div>
-              <div id="sources-list"></div>
-            </div>
-            <button class="copy-btn" onclick="copyContent()">
-              ⎘ Copy full blog as Markdown
-            </button>
-          </div>
-        </div>
+/* Score bar */
+.score-bar{
+  padding:14px 22px;border-bottom:1px solid var(--border);
+  background:var(--surface);
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.score-item{display:flex;flex-direction:column;gap:3px;}
+.score-name{font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);}
+.score-val{font-family:var(--font-mono);font-size:15px;font-weight:500;}
+.score-val.high{color:var(--green);}
+.score-val.mid{color:var(--gold);}
+.score-val.low{color:var(--red);}
+.score-divider{width:1px;height:28px;background:var(--border);}
+.verdict-pill{
+  padding:4px 12px;border-radius:20px;font-family:var(--font-mono);font-size:10px;font-weight:500;
+}
+.verdict-pill.approved{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);color:var(--green);}
+.verdict-pill.needs_fix{background:rgba(240,192,96,.1);border:1px solid rgba(240,192,96,.3);color:var(--gold);}
+.verdict-pill.rejected{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.score-bar-right{margin-left:auto;display:flex;gap:7px;align-items:center;}
+
+/* Tabs */
+.tabs-row{
+  display:flex;gap:0;border-bottom:1px solid var(--border);
+  background:var(--surface);overflow-x:auto;
+}
+.tabs-row::-webkit-scrollbar{height:0;}
+.tab-btn{
+  padding:10px 16px;border:none;background:none;cursor:pointer;
+  font-family:var(--font-sans);font-size:11px;font-weight:600;color:var(--muted);
+  border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;
+  display:flex;align-items:center;gap:5px;
+}
+.tab-btn:hover{color:var(--muted2);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-content{display:none;flex:1;}
+.tab-content.active{display:flex;flex-direction:column;}
+
+/* ── BLOG TAB ── */
+.blog-area{padding:22px 26px;display:flex;flex-direction:column;gap:0;}
+.blog-meta-strip{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.meta-chip{
+  font-family:var(--font-mono);font-size:9px;padding:3px 9px;
+  border-radius:20px;border:1px solid;
+}
+.meta-chip.t{color:var(--gold);border-color:rgba(240,192,96,.3);background:rgba(240,192,96,.07);}
+.meta-chip.m{color:var(--teal);border-color:rgba(45,212,191,.3);background:rgba(45,212,191,.07);}
+.meta-chip.p{color:var(--accent);border-color:rgba(124,109,250,.3);background:rgba(124,109,250,.07);}
+.meta-chip.g{color:var(--green);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.07);}
+.blog-title{font-family:var(--font-serif);font-size:26px;line-height:1.3;margin-bottom:10px;}
+.blog-desc{
+  font-size:12px;color:var(--muted2);line-height:1.7;
+  padding:10px 13px;background:var(--surface2);
+  border-left:3px solid var(--accent);border-radius:0 6px 6px 0;
+  margin-bottom:18px;
+}
+.blog-content{
+  font-size:13px;line-height:1.85;color:#c0c0d8;
+  border-top:1px solid var(--border);padding-top:18px;
+}
+.blog-content h1,.blog-content h2{font-family:var(--font-serif);color:var(--text);margin:20px 0 8px;}
+.blog-content h1{font-size:20px;}
+.blog-content h2{font-size:17px;}
+.blog-content h3{font-size:14px;font-weight:600;color:var(--text);margin:14px 0 5px;}
+.blog-content p{margin-bottom:11px;}
+.blog-content strong{color:var(--text);font-weight:600;}
+.blog-content em{color:var(--gold);font-style:italic;}
+.blog-content ul,ol{padding-left:20px;margin-bottom:10px;}
+.blog-content li{margin-bottom:5px;}
+.blog-content code{font-family:var(--font-mono);font-size:11px;background:var(--surface2);padding:2px 5px;border-radius:4px;color:var(--accent2);}
+.blog-content blockquote{border-left:3px solid var(--accent);padding-left:13px;margin:12px 0;color:var(--muted2);font-style:italic;}
+.blog-content a{color:var(--accent);text-decoration:none;}
+.blog-content a:hover{text-decoration:underline;}
+
+.kw-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);}
+.kw-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-right:4px;}
+.kw-tag{font-family:var(--font-mono);font-size:9px;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.2);color:var(--green);padding:3px 9px;border-radius:20px;}
+
+.cta-box{
+  margin-top:14px;padding:11px 15px;background:rgba(45,212,191,.06);
+  border:1px solid rgba(45,212,191,.2);border-radius:8px;font-size:12px;color:var(--teal);
+}
+.cta-box strong{display:block;margin-bottom:3px;font-size:9px;text-transform:uppercase;letter-spacing:.5px;}
+
+/* Sources */
+.sources-panel{padding:16px 22px;border-top:1px solid var(--border);background:var(--surface);}
+.sources-title{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:10px;}
+.sources-grid{display:flex;flex-direction:column;gap:5px;}
+.source-card{
+  padding:8px 12px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:7px;text-decoration:none;transition:border-color .15s;display:block;
+}
+.source-card:hover{border-color:rgba(124,109,250,.3);}
+.source-title{font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.source-url{font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── REVIEW TAB ── */
+.review-area{padding:20px 22px;display:flex;flex-direction:column;gap:14px;}
+.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.review-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:9px;
+  padding:13px 15px;
+}
+.review-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.review-card-name{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+.review-score-ring{
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:11px;font-weight:500;
+}
+.review-bar-track{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:7px;}
+.review-bar-fill{height:100%;border-radius:2px;transition:width .6s ease;}
+.review-issues{font-size:10px;color:var(--muted2);line-height:1.6;}
+.review-issues .issue{
+  display:flex;align-items:flex-start;gap:5px;margin-bottom:3px;
+}
+.issue-dot{width:4px;height:4px;border-radius:50%;background:var(--red);margin-top:5px;flex-shrink:0;}
+.fixes-section{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:14px 16px;}
+.fixes-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--gold);margin-bottom:10px;}
+.fix-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted2);line-height:1.5;}
+.fix-item:last-child{border-bottom:none;}
+.fix-num{font-family:var(--font-mono);font-size:9px;color:var(--gold);background:rgba(240,192,96,.1);padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:1px;}
+.rag-section{background:var(--surface2);border:1px solid rgba(45,212,191,.15);border-radius:9px;padding:14px 16px;}
+.rag-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.rag-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--teal);}
+.rag-verdict{font-family:var(--font-mono);font-size:10px;padding:2px 9px;border-radius:20px;}
+.rag-verdict.pass{background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.25);}
+.rag-verdict.fail{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.25);}
+.rag-summary{font-size:11px;color:var(--muted2);line-height:1.65;margin-bottom:8px;}
+.rag-suggestions{display:flex;flex-direction:column;gap:5px;}
+.rag-sug{font-size:11px;color:var(--muted2);display:flex;align-items:flex-start;gap:6px;}
+.rag-sug-icon{color:var(--teal);flex-shrink:0;margin-top:1px;}
+
+/* ── SOCIAL TAB ── */
+.social-area{padding:20px 22px;display:flex;flex-direction:column;gap:16px;}
+.social-platform-tabs{display:flex;gap:6px;margin-bottom:4px;}
+.soc-tab{
+  padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .2s;
+}
+.soc-tab.active.instagram{border-color:rgba(225,48,108,.4);background:rgba(225,48,108,.08);color:#e1306c;}
+.soc-tab.active.linkedin{border-color:rgba(10,102,194,.4);background:rgba(10,102,194,.08);color:#60a5fa;}
+.social-post-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.social-card-header{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.social-platform-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;}
+.social-platform-icon{font-size:16px;}
+.social-size{font-family:var(--font-mono);font-size:9px;color:var(--muted);}
+.social-image-wrap{
+  background:var(--surface);display:flex;align-items:center;justify-content:center;
+  padding:14px;
+}
+.social-image-wrap img{max-width:100%;border-radius:6px;display:block;}
+.social-caption{padding:14px 16px;}
+.social-caption-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px;}
+.social-caption-text{font-size:12px;color:var(--muted2);line-height:1.7;white-space:pre-wrap;}
+.caption-actions{display:flex;gap:6px;margin-top:10px;}
+
+/* ── IMAGES TAB ── */
+.images-area{padding:20px 22px;display:flex;flex-direction:column;gap:14px;}
+.image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.image-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.image-card-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.image-card-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+.image-card-size{font-family:var(--font-mono);font-size:9px;color:var(--muted);}
+.image-card img{width:100%;display:block;}
+.image-card-footer{padding:8px 14px;display:flex;gap:6px;}
+
+/* ── FEEDBACK / HUMAN GATE ── */
+.human-gate{
+  padding:16px 22px;background:rgba(124,109,250,.04);
+  border-top:1px solid rgba(124,109,250,.15);display:none;
+}
+.gate-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.gate-icon{width:28px;height:28px;background:rgba(124,109,250,.15);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.gate-title{font-size:12px;font-weight:600;color:var(--accent);}
+.gate-sub{font-size:10px;color:var(--muted);}
+.gate-textarea{min-height:56px;font-size:12px;margin-bottom:10px;}
+.gate-actions{display:flex;gap:8px;}
+.btn-approve{
+  flex:1;padding:9px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);
+  border-radius:7px;color:var(--green);font-size:12px;font-weight:600;cursor:pointer;transition:background .2s;
+}
+.btn-approve:hover{background:rgba(74,222,128,.18);}
+.btn-refine{
+  flex:1;padding:9px;background:rgba(250,109,143,.08);border:1px solid rgba(250,109,143,.25);
+  border-radius:7px;color:var(--accent2);font-size:12px;font-weight:600;cursor:pointer;transition:background .2s;
+}
+.btn-refine:hover{background:rgba(250,109,143,.15);}
+.iter-info{font-family:var(--font-mono);font-size:9px;color:var(--muted);text-align:center;margin-top:6px;}
+
+/* ── APPROVED BANNER ── */
+.approved-banner{
+  margin:14px 22px;padding:12px 16px;background:rgba(74,222,128,.09);
+  border:1px solid rgba(74,222,128,.25);border-radius:8px;
+  font-size:12px;color:var(--green);font-weight:600;text-align:center;display:none;
+}
+
+/* ── SCHEDULED TAB ── */
+.schedule-area{padding:20px 22px;display:flex;flex-direction:column;gap:14px;}
+.schedule-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:16px;}
+.schedule-title{font-size:11px;font-weight:600;color:var(--text);margin-bottom:12px;}
+.schedule-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.schedule-actions{display:flex;gap:8px;margin-top:4px;}
+.btn-schedule{
+  flex:1;padding:9px;background:linear-gradient(135deg,rgba(124,109,250,.15),rgba(250,109,143,.1));
+  border:1px solid rgba(124,109,250,.3);border-radius:7px;color:var(--accent);
+  font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;
+}
+.btn-schedule:hover{background:linear-gradient(135deg,rgba(124,109,250,.25),rgba(250,109,143,.15));}
+.schedule-queue{display:flex;flex-direction:column;gap:6px;}
+.queue-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  background:var(--surface);border:1px solid var(--border);border-radius:7px;font-size:11px;
+}
+.queue-platform{font-size:14px;flex-shrink:0;}
+.queue-title{flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.queue-time{font-family:var(--font-mono);font-size:9px;color:var(--muted);flex-shrink:0;}
+.queue-status{padding:2px 8px;border-radius:20px;font-size:9px;font-family:var(--font-mono);}
+.queue-status.scheduled{background:rgba(124,109,250,.1);color:var(--accent);border:1px solid rgba(124,109,250,.2);}
+.queue-status.sent{background:rgba(74,222,128,.08);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+
+/* ── BUTTONS ── */
+.btn-small{
+  padding:5px 11px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .15s;
+  font-family:var(--font-sans);
+}
+.btn-small:hover{border-color:var(--border2);color:var(--text);}
+.btn-small.accent{border-color:rgba(124,109,250,.3);background:rgba(124,109,250,.08);color:var(--accent);}
+.btn-small.danger{border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);color:var(--red);}
+.btn-small.success{border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.06);color:var(--green);}
+
+/* Error box */
+.error-box{
+  margin:16px;padding:12px 14px;background:rgba(248,113,113,.06);
+  border:1px solid rgba(248,113,113,.2);border-radius:8px;font-size:12px;color:var(--red);display:none;
+}
+
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--border);padding:0 28px;height:38px;
+  display:flex;align-items:center;gap:16px;
+  font-family:var(--font-mono);font-size:9px;color:var(--muted);
+  background:rgba(8,8,16,.7);
+}
+.footer-dot{width:4px;height:4px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);}
+
+/* Utilities */
+.hidden{display:none!important;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.fade-in{animation:fadeIn .4s ease;}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb3 orb"></div>
+<div class="app">
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">ET</div>
+    <div class="logo-name">ET<span>-AI</span> Content Engine</div>
+  </div>
+  <div class="header-center">
+    <div class="pipeline-crumb">
+      <span class="crumb" id="crumb-write">✍️ Write</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-validate">🔍 Validate</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-rag">🧠 RAG Check</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-review">🔒 Review</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-images">🖼 Images</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-social">📱 Social</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn-small success" onclick="resetUI()">🔄 New Project</button>
+    <div class="status-pill"><div class="status-dot"></div><span id="headerStatus">READY</span></div>
+  </div>
+</header>
+
+<div class="main">
+
+  <aside class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="section-label">Blog Mode</div>
+      <div class="mode-switch">
+        <button class="mode-btn news active" id="modeNews" onclick="setMode('news')">📰 News Blog</button>
+        <button class="mode-btn product" id="modeProd" onclick="setMode('product')">🚀 Product Launch</button>
       </div>
-
-      <footer>
-        <span><span class="status-dot"></span>localhost:5000</span>
-        <span>·</span><span>llama-3.3-70b-versatile</span> <span>·</span
-        ><span id="mode-indicator">Mode: News</span> <span>·</span
-        ><span id="gen-count">0 blogs generated</span>
-      </footer>
     </div>
 
-    <script>
-      let currentMode = "news",
-        lastRaw = "",
-        genCount = 0;
+    <div class="sidebar-section">
+      <div class="section-label">Content Brief</div>
+      <div class="field-group">
+        <label class="field-label" id="topic-label">Topic / Idea *</label>
+        <textarea id="topic" rows="2" placeholder="e.g. Why AI is reshaping enterprise content marketing"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Target Audience</label>
+        <input id="audience" type="text" placeholder="e.g. startup founders, B2B marketers"/>
+      </div>
+      <div id="news-ctx">
+        <div class="field-group">
+          <label class="field-label">Additional Context</label>
+          <textarea id="context" rows="2" placeholder="Specific angle, tone, or focus..."></textarea>
+        </div>
+      </div>
+    </div>
 
-      function setMode(mode) {
-        currentMode = mode;
-        document
-          .querySelectorAll(".mode-btn")
-          .forEach((b) => b.classList.remove("active"));
-        document.querySelector(".mode-btn." + mode).classList.add("active");
-        document
-          .getElementById("product-fields")
-          .classList.toggle("show", mode === "product");
-        document.getElementById("news-fields").style.display =
-          mode === "news" ? "block" : "none";
-        document.getElementById("topic-label").textContent =
-          mode === "product" ? "Product Name *" : "Topic / Idea *";
-        document.getElementById("topic").placeholder =
-          mode === "product"
-            ? "e.g. LaunchPad — AI content scheduler"
-            : "e.g. Why AI is changing content marketing";
-        document.getElementById("mode-indicator").textContent =
-          "Mode: " + (mode === "news" ? "News" : "Product");
-      }
+    <div class="sidebar-section hidden" id="product-section">
+      <div class="section-label">Product Details</div>
+      <div class="field-group">
+        <label class="field-label">Product Description *</label>
+        <textarea id="product_details" rows="3" placeholder="What does your product do? What problem does it solve?"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Key Features</label>
+        <textarea id="key_features" rows="2" placeholder="e.g. Real-time sync, AI-powered, No-code setup"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Unique Value Proposition</label>
+        <input id="uvp" type="text" placeholder="e.g. 10x faster than manual creation"/>
+      </div>
+    </div>
 
-      async function generateBlog() {
-        const topic = document.getElementById("topic").value.trim();
-        if (!topic) {
-          alert("Please enter a topic or product name.");
-          return;
-        }
-        setLoading(
-          true,
-          currentMode === "news"
-            ? "Searching web + writing..."
-            : "Building product blog...",
-        );
-        resetOutput();
-        const payload = {
-          mode: currentMode,
-          topic,
-          audience:
-            document.getElementById("audience").value || "general audience",
-          length: parseInt(document.getElementById("length").value),
-        };
+    <div class="sidebar-section">
+      <div class="section-label">Options</div>
+      <div class="field-group">
+        <label class="field-label">Word Count</label>
+        <div class="range-row">
+          <input type="range" id="length" min="300" max="2000" step="100" value="1000" oninput="document.getElementById('length-val').textContent=this.value+' words'"/>
+          <span class="range-val" id="length-val">1000 words</span>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Tone</label>
+        <select id="tone">
+          <option value="professional">Professional</option>
+          <option value="conversational">Conversational</option>
+          <option value="authoritative">Authoritative</option>
+          <option value="playful">Playful</option>
+          <option value="educational">Educational</option>
+        </select>
+      </div>
 
-        if (userImageB64) payload.user_image_b64 = userImageB64;
+    </div>
 
-        // Image toggle
-        const genImages =
-          document.getElementById("gen-images-toggle")?.checked || false;
-        payload.generate_images = genImages;
-        payload.image_formats = [];
-        if (genImages) {
-          if (document.getElementById("fmt-blog")?.checked)
-            payload.image_formats.push("blog");
-          if (document.getElementById("fmt-instagram")?.checked)
-            payload.image_formats.push("instagram");
-          if (document.getElementById("fmt-linkedin")?.checked)
-            payload.image_formats.push("linkedin");
-          if (payload.image_formats.length === 0)
-            payload.image_formats = ["blog"]; // fallback
-        }
+    <div class="sidebar-section">
+      <div class="section-label">Image Generation</div>
+      <div class="toggle-row" style="margin-bottom:10px">
+        <span class="toggle-label">Generate AI images</span>
+        <label class="toggle"><input type="checkbox" id="gen-images" checked/><span class="toggle-slider"></span></label>
+      </div>
+      <div id="image-options">
+        <div class="field-group">
+          <label class="field-label">Formats</label>
+          <div class="check-grid">
+            <label class="check-item checked" data-fmt="blog"><input type="checkbox" checked>🖼 Blog Hero</label>
+            <label class="check-item checked" data-fmt="instagram"><input type="checkbox" checked>📸 Instagram</label>
+            <label class="check-item checked" data-fmt="linkedin"><input type="checkbox" checked>💼 LinkedIn</label>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Or upload your image</label>
+          <div class="upload-area" id="upload-area" onclick="document.getElementById('img-upload').click()">
+            📎 Click to upload (PNG/JPG)
+          </div>
+          <input type="file" id="img-upload" accept="image/*" style="display:none" onchange="handleImageUpload(this)"/>
+        </div>
+      </div>
+    </div>
 
+    <div class="sidebar-section">
+      <div class="section-label">Social Media</div>
+      <div class="field-group">
+        <label class="field-label">Generate Posts For</label>
+        <div class="check-grid">
+          <label class="check-item checked" data-platform="instagram"><input type="checkbox" checked>📸 Instagram</label>
+          <label class="check-item checked" data-platform="linkedin"><input type="checkbox" checked>💼 LinkedIn</label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-section">
+      <div class="section-label">Localization (C++ Engine)</div>
+      <div class="field-group">
+        <div class="check-grid" id="lang-grid">
+          <label class="check-item" data-lang="Spanish"><input type="checkbox">🇪🇸 Spanish</label>
+          <label class="check-item" data-lang="German"><input type="checkbox">🇩🇪 German</label>
+          <label class="check-item" data-lang="Japanese"><input type="checkbox">🇯🇵 Japanese</label>
+          <label class="check-item" data-lang="French"><input type="checkbox">🇫🇷 French</label>
+        </div>
+      </div>
+    </div>
 
-        // ↓ ADD THESE 4 LINES HERE ↓
-        payload.social_platforms = [];
-        if (document.getElementById("platform-instagram")?.checked)
-          payload.social_platforms.push("instagram");
-        if (document.getElementById("platform-linkedin")?.checked)
-          payload.social_platforms.push("linkedin");
-        // ↑ END OF NEW LINES ↑
+    <div class="sidebar-section" style="border-bottom:none;">
+      <button class="btn-generate" id="generateBtn" onclick="generate()">
+        <div class="btn-spinner" id="btn-spinner"></div>
+        <span id="btn-text">⚡ Generate Content</span>
+      </button>
+    </div>
 
-        if (currentMode === "news")
-          payload.context = document.getElementById("context").value;
-        else {
-          payload.product_details =
-            document.getElementById("product_details").value;
-          payload.key_features = document.getElementById("key_features").value;
-          payload.uvp = document.getElementById("uvp").value;
-        }
+  </aside>
 
-        try {
-          const res = await fetch("http://127.0.0.1:5000/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          const data = await res.json();
-          if (!res.ok || data.error) {
-            showError(data.error || "Something went wrong.");
-            return;
-          }
-          renderResult(data);
-          genCount++;
-          document.getElementById("gen-count").textContent =
-            genCount + " blog" + (genCount > 1 ? "s" : "") + " generated";
-        } catch (e) {
-          showError("Cannot reach backend. Run: python api_server.py");
-        } finally {
-          setLoading(false);
-        }
-      }
+  <div class="output" id="outputPanel">
 
-      function togglePlatform(platform, on) {
-        const label = document.getElementById(
-          platform === "instagram" ? "insta-label" : "li-label",
-        );
-        if (label) {
-          label.style.borderColor = on ? "var(--accent)" : "var(--border)";
-          label.style.color = on ? "var(--accent)" : "var(--text)";
-        }
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">✨</div>
+      <h3>AI Content Intelligence Engine</h3>
+      <p>Configure your content brief on the left and hit Generate. The multi-agent pipeline will write, fact-check, review, and publish your content.</p>
+      <div class="empty-features">
+        <div class="empty-feature"><div class="empty-feature-dot"></div>LangGraph 6-node pipeline: Write → Validate → RAG → Review → Images → Social</div>
+        <div class="empty-feature"><div class="empty-feature-dot"></div>RAG fact-checking with ChromaDB + Tavily web search</div>
+        <div class="empty-feature"><div class="empty-feature-dot"></div>5-layer compliance review: Tone · Legal · Brand · Accuracy · Policy</div>
+        <div class="empty-feature"><div class="empty-feature-dot"></div>AI image generation (Stability AI) in 3 formats</div>
+        <div class="empty-feature"><div class="empty-feature-dot"></div>Instagram + LinkedIn social posts with branded graphics</div>
+        <div class="empty-feature"><div class="empty-feature-dot"></div>Human-in-the-loop approval gate with refinement loop</div>
+      </div>
+    </div>
 
-        // Show/hide image upload if social is enabled
-        const isInsta = document.getElementById("platform-instagram")?.checked;
-        const isLi = document.getElementById("platform-linkedin")?.checked;
-        const uploadBox = document.getElementById("social-image-upload");
-        if (uploadBox) {
-          uploadBox.style.display = isInsta || isLi ? "block" : "none";
-        }
-      }
+    <div class="loading-state" id="loadingState">
+      <div class="loading-ring"></div>
+      <div>
+        <div class="loading-title">Pipeline Running...</div>
+        <div class="loading-step" id="loadingStep">Initializing agents</div>
+      </div>
+      <div class="loading-nodes">
+        <div class="loading-node" id="ln-write">Write</div>
+        <div class="loading-node" id="ln-validate">Validate</div>
+        <div class="loading-node" id="ln-rag">RAG</div>
+        <div class="loading-node" id="ln-review">Review</div>
+        <div class="loading-node" id="ln-images">Images</div>
+        <div class="loading-node" id="ln-social">Social</div>
+      </div>
+    </div>
 
-      let userImageB64 = null;
+    <div class="error-box" id="errorBox"></div>
 
-      function handleImageUpload(input) {
-        const file = input.files[0];
-        if (!file) return;
-        processFile(file);
-      }
+    <div class="result-wrap" id="resultWrap">
 
-      function handleDrop(e) {
-        e.preventDefault();
-        document.getElementById("upload-zone").style.borderColor = "var(--border)";
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith("image/")) {
-          processFile(file);
-        }
-      }
+      <div class="score-bar" id="scoreBar">
+        <div class="score-item">
+          <div class="score-name">Quality Score</div>
+          <div class="score-val" id="scoreQuality">—</div>
+        </div>
+        <div class="score-divider"></div>
+        <div class="score-item">
+          <div class="score-name">Review Score</div>
+          <div class="score-val" id="scoreReview">—</div>
+        </div>
+        <div class="score-divider"></div>
+        <div class="score-item">
+          <div class="score-name">RAG Score</div>
+          <div class="score-val" id="scoreRag">—</div>
+        </div>
+        <div class="score-divider"></div>
+        <div class="score-item">
+          <div class="score-name">Iteration</div>
+          <div class="score-val" id="scoreIter" style="color:var(--muted2)">—</div>
+        </div>
+        <div class="score-bar-right">
+          <div class="verdict-pill" id="verdictPill">—</div>
+        </div>
+      </div>
 
-      function processFile(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          userImageB64 = e.target.result.split(",")[1];
-          document.getElementById("upload-placeholder").style.display = "none";
-          document.getElementById("upload-preview").style.display = "block";
-          document.getElementById("preview-img").src = e.target.result;
-          document.getElementById("upload-filename").textContent = file.name;
-        };
-        reader.readAsDataURL(file);
-      }
+      <div class="tabs-row">
+        <button class="tab-btn active" onclick="switchTab('blog')">📝 Blog Post</button>
+        <button class="tab-btn" onclick="switchTab('review')">🔒 Review Report</button>
+        <button class="tab-btn" onclick="switchTab('social')">📱 Social Posts</button>
+        <button class="tab-btn" onclick="switchTab('images')">🖼 Images</button>
+        <button class="tab-btn" onclick="switchTab('translations')">🌍 Translations</button>
+        <button class="tab-btn" onclick="switchTab('schedule')">📅 Schedule</button>
+      </div>
 
-      function clearUpload(e) {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        userImageB64 = null;
-        document.getElementById("user-image-input").value = "";
-        document.getElementById("upload-placeholder").style.display = "block";
-        document.getElementById("upload-preview").style.display = "none";
-        document.getElementById("preview-img").src = "";
-      }
+      <div class="approved-banner" id="approvedBanner">✅ Content approved and ready to publish!</div>
 
-      function toggleImageOptions(on) {
-        document.getElementById("image-format-options").style.display = on
-          ? "block"
-          : "none";
-        const track = document.getElementById("toggle-track");
-        const thumb = document.getElementById("toggle-thumb");
-        if (track) {
-          track.style.background = on ? "#7c6dfa" : "var(--border)";
-        }
-        if (thumb) {
-          thumb.style.transform = on ? "translateX(16px)" : "translateX(0)";
-        }
-      }
+      <div class="tab-content active" id="tab-blog">
+        <div class="blog-area fade-in" id="blogArea">
+          <div class="blog-meta-strip" id="metaStrip"></div>
+          <div class="blog-title" id="blogTitle"></div>
+          <div class="blog-desc" id="blogDesc"></div>
+          <div class="blog-content" id="blogContent"></div>
+          <div class="kw-row" id="kwRow"></div>
+          <div class="cta-box" id="ctaBox"><strong>Call to Action</strong><span id="ctaText"></span></div>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button class="btn-small accent" onclick="copyBlog()">⎘ Copy Markdown</button>
+            <button class="btn-small" onclick="downloadBlog()">⬇ Download .md</button>
+            <button class="btn-small" onclick="copyBlogHtml()">⎘ Copy HTML</button>
+          </div>
+        </div>
+        <div class="sources-panel" id="sourcesPanel" style="display:none">
+          <div class="sources-title">Sources Used</div>
+          <div class="sources-grid" id="sourcesGrid"></div>
+        </div>
+      </div>
 
-      async function submitFeedback(action) {
-        const feedback = document.getElementById("feedback-text").value.trim();
-        if (action === "regenerate" && !feedback) {
-          alert("Please describe what to improve.");
-          return;
-        }
-        setLoading(
-          true,
-          action === "approve"
-            ? "Saving..."
-            : "Rewriting with your feedback...",
-        );
-        try {
-          const res = await fetch("http://127.0.0.1:5000/feedback", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action, feedback }),
-          });
-          const data = await res.json();
-          if (action === "approve") {
-            document.getElementById("approved-banner").style.display = "block";
-            document.getElementById("feedback-bar").style.display = "none";
-          } else {
-            document.getElementById("feedback-text").value = "";
-            renderResult(data);
-          }
-        } catch (e) {
-          showError("Feedback failed. Is the backend running?");
-        } finally {
-          setLoading(false);
-        }
-      }
+      <div class="tab-content" id="tab-review">
+        <div class="review-area fade-in">
+          <div class="review-grid" id="reviewGrid"></div>
+          <div class="rag-section" id="ragSection">
+            <div class="rag-header">
+              <div class="rag-title">🧠 RAG Fact-Check</div>
+              <div class="rag-verdict pass" id="ragVerdict">PASS</div>
+            </div>
+            <div class="rag-summary" id="ragSummary"></div>
+            <div class="rag-suggestions" id="ragSuggestions"></div>
+          </div>
+          <div class="fixes-section" id="fixesSection" style="display:none">
+            <div class="fixes-title">Required Fixes</div>
+            <div id="fixesList"></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Editor Note</label>
+            <div style="font-size:12px;color:var(--muted2);padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;line-height:1.6;" id="editorNote"></div>
+          </div>
+        </div>
+      </div>
 
-      function renderResult(data) {
-        lastRaw = data.content || "";
-        const score = data.quality_score || 0;
-        document.getElementById("quality-wrap").style.display = "block";
-        document.getElementById("quality-score-val").textContent =
-          score.toFixed(0) + " / 100";
-        document.getElementById("quality-score-val").style.color =
-          score >= 75 ? "#4ade80" : score >= 50 ? "#f0c060" : "#f87171";
-        const fill = document.getElementById("quality-fill");
-        fill.style.width = score + "%";
-        fill.style.background =
-          score >= 75 ? "#4ade80" : score >= 50 ? "#f0c060" : "#f87171";
-        document.getElementById("quality-issues").textContent =
-          data.quality_issues && data.quality_issues !== "None"
-            ? "⚠ " + data.quality_issues
-            : "";
-        document.getElementById("feedback-bar").style.display = "block";
-        document.getElementById("iter-num").textContent = data.iteration || 1;
-        const rem = (data.max_iterations || 3) - (data.iteration || 1);
-        document.getElementById("iter-badge").textContent =
-          rem > 0
-            ? rem + " regeneration" + (rem > 1 ? "s" : "") + " remaining"
-            : "Final version — approve or copy";
-        const strip = document.getElementById("meta-strip");
-        strip.innerHTML = `<span class="meta-chip mode-${data.mode}">${data.mode === "news" ? "📰 News blog" : "🚀 Product blog"}</span>`;
-        if (data.reading_time)
-          strip.innerHTML += `<span class="meta-chip time">⏱ ${data.reading_time}</span>`;
-        if (data.iteration > 1)
-          strip.innerHTML += `<span class="meta-chip phase">↺ Iteration ${data.iteration}</span>`;
-        document.getElementById("blog-title").textContent =
-          data.title || "Generated Blog";
-        const metaEl = document.getElementById("blog-meta-desc");
-        if (data.meta_description) {
-          metaEl.textContent = data.meta_description;
-          metaEl.style.display = "block";
-        } else metaEl.style.display = "none";
-        document.getElementById("blog-content").innerHTML = markdownToHtml(
-          data.content || "",
-        );
-        const ctaBox = document.getElementById("cta-box");
-        if (data.target_cta) {
-          document.getElementById("cta-text").textContent = data.target_cta;
-          ctaBox.style.display = "block";
-        } else ctaBox.style.display = "none";
-        const kwRow = document.getElementById("keywords-row");
-        kwRow.innerHTML = "";
-        if (data.seo_keywords && data.seo_keywords.length) {
-          kwRow.innerHTML = '<span class="kw-label">SEO</span>';
-          data.seo_keywords.forEach((k) => {
-            kwRow.innerHTML += `<span class="kw-tag">${k}</span>`;
-          });
-        }
-        const srcSec = document.getElementById("sources-section");
-        const srcList = document.getElementById("sources-list");
-        if (data.sources && data.sources.length) {
-          srcList.innerHTML = data.sources
-            .map(
-              (s) =>
-                `<a href="${s.url}" target="_blank" class="source-link"><div class="source-link-title">${s.title}</div><div class="source-link-url">${s.url}</div></a>`,
-            )
-            .join("");
-          srcSec.style.display = "block";
-        } else srcSec.style.display = "none";
-        document.getElementById("empty-state").style.display = "none";
-        document.getElementById("result").style.display = "block";
+      <div class="tab-content" id="tab-social">
+        <div class="social-area fade-in" id="socialArea">
+          <div class="social-platform-tabs">
+            <button class="soc-tab active instagram" onclick="showSocial('instagram')">📸 Instagram</button>
+            <button class="soc-tab linkedin" onclick="showSocial('linkedin')">💼 LinkedIn</button>
+          </div>
+          <div id="social-instagram">
+            <div class="social-post-card">
+              <div class="social-card-header">
+                <div class="social-platform-label"><span class="social-platform-icon">📸</span>Instagram Post</div>
+                <span class="social-size" id="ig-size">1080×1080</span>
+              </div>
+              <div class="social-image-wrap"><img id="ig-image" src="" alt="Instagram"/></div>
+              <div class="social-caption">
+                <div class="social-caption-label">Caption</div>
+                <div class="social-caption-text" id="ig-caption"></div>
+                <div class="caption-actions">
+                  <button class="btn-small accent" onclick="copyCaption('ig')">⎘ Copy Caption</button>
+                  <button class="btn-small success" onclick="downloadImage('ig')">⬇ Download Image</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="social-linkedin" style="display:none">
+            <div class="social-post-card">
+              <div class="social-card-header">
+                <div class="social-platform-label"><span class="social-platform-icon">💼</span>LinkedIn Post</div>
+                <span class="social-size" id="li-size">1200×628</span>
+              </div>
+              <div class="social-image-wrap"><img id="li-image" src="" alt="LinkedIn"/></div>
+              <div class="social-caption">
+                <div class="social-caption-label">Post Text</div>
+                <div class="social-caption-text" id="li-caption"></div>
+                <div class="caption-actions">
+                  <button class="btn-small accent" onclick="copyCaption('li')">⎘ Copy Post</button>
+                  <button class="btn-small success" onclick="downloadImage('li')">⬇ Download Image</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        // RAG panel
-        if (data.rag_verdict) {
-          const panel = document.getElementById("rag-panel");
-          const badge = document.getElementById("rag-verdict-badge");
-          const colors = {
-            PASS: "#4ade80",
-            NEEDS_REVISION: "#f0c060",
-            FAIL: "#f87171",
-          };
-          const color = colors[data.rag_verdict] || "#7a7a9a";
-          badge.textContent = data.rag_verdict.replace("_", " ");
-          badge.style.color = color;
-          badge.style.borderColor = color + "55";
-          badge.style.background = color + "15";
-          document.getElementById("rag-summary").textContent =
-            data.rag_summary || "";
-          if (data.rag_suggestions && data.rag_suggestions.length) {
-            document.getElementById("rag-suggestions").innerHTML =
-              data.rag_suggestions.map((s) => `• ${s}`).join("<br>");
-          }
-          panel.style.display = "block";
-        }
+      <div class="tab-content" id="tab-images">
+        <div class="images-area fade-in">
+          <div class="image-grid" id="imageGrid">
+            <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted);font-size:12px;">No images generated yet.</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="tab-content" id="tab-translations">
+        <div class="blog-area fade-in">
+          <div style="margin-bottom:15px; color: var(--gold); font-weight:bold;">⚡ Processed by C++ Parallel Engine</div>
+          <div id="translationsWrap" style="display:flex; flex-direction:column; gap:20px;">
+            <div style="text-align:center;padding:30px;color:var(--muted);font-size:12px;">No translations requested or still processing.</div>
+          </div>
+        </div>
+      </div>
 
-        // Review panel
-        if (data.review_verdict) {
-          const vColors = {
-            APPROVED: "#4ade80",
-            NEEDS_FIX: "#f0c060",
-            REJECTED: "#f87171",
-          };
-          const vc = vColors[data.review_verdict] || "#7a7a9a";
-          let html = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <span style="font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)">Compliance Review</span>
-      <span style="font-family:'DM Mono',monospace;font-size:10px;padding:3px 9px;border-radius:20px;
-        border:1px solid ${vc}55;background:${vc}15;color:${vc}">${data.review_verdict.replace("_", " ")}</span>
+      <div class="tab-content" id="tab-schedule">
+        <div class="schedule-area fade-in">
+          <div class="schedule-card">
+            <div class="schedule-title">📅 Schedule Post</div>
+            <div class="schedule-row">
+              <div class="field-group" style="margin:0">
+                <label class="field-label">Platform</label>
+                <select id="sched-platform">
+                  <option value="instagram">📸 Instagram</option>
+                  <option value="linkedin">💼 LinkedIn</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+              <div class="field-group" style="margin:0">
+                <label class="field-label">Date & Time</label>
+                <input type="datetime-local" id="sched-time"/>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Note (optional)</label>
+              <input type="text" id="sched-note" placeholder="Campaign name, context..."/>
+            </div>
+            <div class="schedule-actions">
+              <button class="btn-schedule" onclick="schedulePost()">📅 Schedule Post</button>
+              <button class="btn-small" onclick="schedulePost(true)" style="padding:9px 16px;">⚡ Post Now</button>
+            </div>
+          </div>
+          <div>
+            <div class="section-label" style="margin-bottom:8px;">Scheduled Queue</div>
+            <div class="schedule-queue" id="scheduleQueue">
+              <div style="text-align:center;padding:16px;color:var(--muted);font-size:11px;">No scheduled posts yet.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="human-gate" id="humanGate">
+        <div class="gate-header">
+          <div class="gate-icon">👤</div>
+          <div>
+            <div class="gate-title">Human Review Required</div>
+            <div class="gate-sub">Review the output above and approve or request refinements</div>
+          </div>
+        </div>
+        <textarea class="gate-textarea" id="humanFeedback" placeholder="Optional: specific feedback for refinement (tone, focus, missing info...)"></textarea>
+        <div class="gate-actions">
+          <button class="btn-approve" onclick="humanAction('approve')">✅ Approve & Translate</button>
+          <button class="btn-refine" onclick="humanAction('refine')">🔄 Refine</button>
+        </div>
+        <div class="iter-info" id="iterInfo">Iteration 1 of 3</div>
+      </div>
+
+    </div></div></div><footer>
+  <div class="footer-dot"></div>
+  <span>LangGraph · Groq Llama-3.3-70B · Stability AI · C++ Engine</span>
+  <span style="margin-left:auto;" id="footerStats">—</span>
+</footer>
+
+</div><script>
+const API = 'http://localhost:8000';
+let state = { mode:'news', jobId:null, polling:null, data:null, scheduleQueue:[], uploadedImageB64:null };
+const $ = id => document.getElementById(id);
+
+// ── MODE ──
+function setMode(m) {
+  state.mode = m;
+  ['news','product'].forEach(n => {
+    $('mode'+n[0].toUpperCase()+n.slice(1)).classList.toggle('active', m===n);
+    $('mode'+n[0].toUpperCase()+n.slice(1)).classList.toggle(n, true);
+  });
+  $('product-section').classList.toggle('hidden', m !== 'product');
+  $('news-ctx').style.display = m === 'news' ? 'block' : 'none';
+  $('topic-label').textContent = m === 'news' ? 'Topic / Idea *' : 'Product Name *';
+}
+
+// ── IMAGE UPLOAD ──
+function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.uploadedImageB64 = e.target.result.split(',')[1];
+    const area = $('upload-area');
+    area.textContent = '✅ ' + file.name;
+    area.classList.add('has-file');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── FORMAT CHECKBOXES ──
+document.querySelectorAll('.check-item').forEach(item => {
+  // 1. Pass the event object 'e' into the function
+  item.addEventListener('click', (e) => {
+    
+    // 2. Stop the browser's default double-click behavior
+    e.preventDefault(); 
+    
+    // 3. Manually toggle your custom classes
+    item.classList.toggle('checked');
+    const checkbox = item.querySelector('input');
+    if (checkbox) {
+      checkbox.checked = item.classList.contains('checked');
+    }
+  });
+});
+
+function getFormats() {
+  return [...document.querySelectorAll('[data-fmt].checked')].map(el => el.dataset.fmt);
+}
+function getPlatforms() {
+  return [...document.querySelectorAll('[data-platform].checked')].map(el => el.dataset.platform);
+}
+
+// ── GENERATE ──
+async function generate() {
+  const topic = $('topic').value.trim();
+  if (!topic) { alert('Please enter a topic.'); return; }
+
+  setLoading(true);
+  setCrumbs([]);
+  $('resultWrap').style.display = 'none';
+  $('emptyState').style.display = 'none';
+  $('errorBox').style.display = 'none';
+  $('humanGate').style.display = 'none';
+  $('approvedBanner').style.display = 'none';
+
+  // FIXED: Capture selected languages properly
+  const langs = [...document.querySelectorAll('#lang-grid .check-item.checked')].map(el => el.dataset.lang);
+
+  const body = {
+    mode: state.mode,
+    topic,
+    audience: $('audience').value.trim() || 'general professional audience',
+    length: parseInt($('length').value),
+    context: $('context').value.trim(),
+    product_details: $('product_details').value.trim(),
+    key_features: $('key_features').value.trim(),
+    uvp: $('uvp').value.trim(),
+    generate_images: $('gen-images').checked,
+    image_formats: getFormats(),
+    social_platforms: getPlatforms(),
+    user_image_b64: state.uploadedImageB64 || null,
+    target_languages: [...document.querySelectorAll('#lang-grid .checked')].map(el => el.dataset.lang),
+    target_languages: langs // FIXED: Sent to backend
+  };
+
+  try {
+    const res = await fetch(`${API}/api/generate`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    state.jobId = data.job_id;
+    startPolling();
+  } catch (err) {
+    showError('Cannot connect to backend. Make sure FastAPI server is running on port 8000.\n\n' + err.message);
+    setLoading(false);
+  }
+}
+
+// ── POLLING ──
+function startPolling() {
+  clearInterval(state.polling);
+  state.polling = setInterval(poll, 2000);
+}
+
+async function poll() {
+  if (!state.jobId) return;
+  try {
+    const res = await fetch(`${API}/api/status/${state.jobId}`);
+    const data = await res.json();
+    updateLoadingStep(data.current_node);
+    if (data.status === 'awaiting_human') {
+      clearInterval(state.polling);
+      setLoading(false);
+      renderResult(data);
+      $('humanGate').style.display = 'block';
+      $('iterInfo').textContent = `Iteration ${data.iteration || 1} of 3`;
+    } else if (data.status === 'completed') {
+      clearInterval(state.polling);
+      setLoading(false);
+      renderResult(data);
+      if(data.approved) $('approvedBanner').style.display = 'block';
+    } else if (data.status === 'error') {
+      clearInterval(state.polling);
+      setLoading(false);
+      showError(data.error || 'An error occurred in the pipeline.');
+    }
+  } catch (err) { console.error(err); }
+}
+
+// ── HUMAN ACTION ──
+async function humanAction(action) {
+  const feedback = $('humanFeedback').value.trim();
+  const langs = [...document.querySelectorAll('#lang-grid .check-item.checked')].map(el => el.dataset.lang);
+
+  try {
+    await fetch(`${API}/api/feedback`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ job_id: state.jobId, action, feedback, target_languages: langs })
+    });
+    if (action === 'approve') {
+      $('humanGate').style.display = 'none';
+      $('headerStatus').textContent = 'LOCALIZING...';
+      startPolling();
+    } else {
+      setLoading(true);
+      $('humanGate').style.display = 'none';
+      $('resultWrap').style.display = 'none';
+      startPolling();
+    }
+  } catch (err) { alert('Error: ' + err.message); }
+}
+
+// ── RENDER RESULT ──
+function renderResult(data) {
+  state.data = data;
+  const blog = data.parsed_blog || {};
+  const review = data.review_checks || {};
+
+  $('emptyState').style.display = 'none';
+  $('resultWrap').style.display = 'flex';
+  $('resultWrap').style.flexDirection = 'column';
+
+  // Scores
+  const qs = Math.round(data.quality_score || 0);
+  const rs = data.review_score || 0;
+  const rg = data.rag_score || 0;
+  $('scoreQuality').textContent = qs + '/100';
+  $('scoreQuality').className = 'score-val ' + scoreClass(qs);
+  $('scoreReview').textContent = rs + '/100';
+  $('scoreReview').className = 'score-val ' + scoreClass(rs);
+  $('scoreRag').textContent = rg + '/100';
+  $('scoreRag').className = 'score-val ' + scoreClass(rg);
+  $('scoreIter').textContent = (data.iteration || 1) + ' / 3';
+  const vd = (data.review_verdict || 'APPROVED').toLowerCase().replace(' ','_');
+  $('verdictPill').className = 'verdict-pill ' + vd;
+  $('verdictPill').textContent = data.review_verdict || 'APPROVED';
+
+  // Banner
+  if (data.approved) {
+    if ($('approvedBanner')) $('approvedBanner').style.display = 'block';
+  } else {
+    if ($('approvedBanner')) $('approvedBanner').style.display = 'none';
+  }
+
+  // Blog
+  const metaStrip = $('metaStrip');
+  metaStrip.innerHTML = '';
+  if (data.mode) metaStrip.innerHTML += `<span class="meta-chip m">${data.mode.toUpperCase()}</span>`;
+  if (blog.reading_time) metaStrip.innerHTML += `<span class="meta-chip t">⏱ ${blog.reading_time}</span>`;
+  if (blog.target_cta) metaStrip.innerHTML += `<span class="meta-chip p">CTA: ${blog.target_cta}</span>`;
+  metaStrip.innerHTML += `<span class="meta-chip g">Score: ${qs}/100</span>`;
+
+  $('blogTitle').textContent = blog.title || data.topic || '';
+  $('blogDesc').textContent = blog.meta_description || '';
+  $('blogContent').innerHTML = marked(blog.content || data.raw_blog || '');
+
+  const kwRow = $('kwRow');
+  if (blog.seo_keywords && blog.seo_keywords.length) {
+    kwRow.innerHTML = '<span class="kw-label">SEO:</span>' + blog.seo_keywords.map(k => `<span class="kw-tag">${k}</span>`).join('');
+    kwRow.style.display = 'flex';
+  }
+
+  if (blog.target_cta) {
+    $('ctaText').textContent = blog.target_cta;
+    $('ctaBox').style.display = 'block';
+  }
+
+  // Sources
+  const sources = data.sources || [];
+  if (sources.length) {
+    $('sourcesPanel').style.display = 'block';
+    $('sourcesGrid').innerHTML = sources.slice(0,5).map(s => `
+      <a class="source-card" href="${s.url||'#'}" target="_blank" rel="noopener">
+        <div class="source-title">${esc(s.title||'Untitled')}</div>
+        <div class="source-url">${esc(s.url||'')}</div>
+      </a>`).join('');
+  }
+
+  // Review grid
+  const checks = { Tone: review.tone, Legal: review.legal, Brand: review.brand, Accuracy: review.accuracy, Policy: review.policy };
+  $('reviewGrid').innerHTML = Object.entries(checks).map(([name, c]) => {
+    if (!c) return '';
+    const sc = c.score || 0;
+    const col = sc >= 80 ? '#4ade80' : sc >= 60 ? '#f0c060' : '#f87171';
+    const issues = (c.issues || []).map(i => `<div class="issue"><div class="issue-dot"></div>${esc(i)}</div>`).join('');
+    return `<div class="review-card">
+      <div class="review-card-header">
+        <div class="review-card-name">${name}</div>
+        <div class="review-score-ring" style="background:${col}20;color:${col};border:2px solid ${col}40;">${sc}</div>
+      </div>
+      <div class="review-bar-track"><div class="review-bar-fill" style="width:${sc}%;background:${col};"></div></div>
+      <div class="review-issues">${issues || '<span style="color:var(--green);font-size:10px;">✓ No issues</span>'}</div>
     </div>`;
+  }).join('');
 
-          const checks = data.review_checks || {};
-          const checkNames = ["tone", "legal", "brand", "accuracy", "policy"];
-          checkNames.forEach((k) => {
-            const c = checks[k] || {};
-            const sc = c.status === "PASS" ? "#4ade80" : "#f87171";
-            const issues = (c.issues || []).join(", ") || "None";
-            html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px">
-      <span style="width:6px;height:6px;border-radius:50%;background:${sc};flex-shrink:0"></span>
-      <span style="color:var(--text);min-width:70px;text-transform:capitalize">${k}</span>
-      <span style="font-family:'DM Mono',monospace;font-size:10px;color:${sc}">${c.score || 0}/100</span>
-      <span style="color:var(--muted);font-size:11px">${issues !== "None" ? issues : ""}</span>
-    </div>`;
-          });
+  // RAG
+  $('ragVerdict').textContent = data.rag_verdict || 'PASS';
+  $('ragVerdict').className = 'rag-verdict ' + ((data.rag_verdict||'').toLowerCase() === 'pass' ? 'pass' : 'fail');
+  $('ragSummary').textContent = data.rag_summary || '';
+  const sugs = data.rag_suggestions || [];
+  $('ragSuggestions').innerHTML = sugs.map(s => `<div class="rag-sug"><span class="rag-sug-icon">→</span>${esc(s)}</div>`).join('');
 
-          if (data.editor_note) {
-            html += `<div style="margin-top:8px;padding:8px 10px;background:var(--surface);border-radius:6px;
-      font-size:11px;color:var(--muted);border-left:3px solid ${vc}">${data.editor_note}</div>`;
-          }
+  // Fixes
+  const fixes = data.review_fixes || [];
+  if (fixes.length) {
+    $('fixesSection').style.display = 'block';
+    $('fixesList').innerHTML = fixes.map((f,i) => `<div class="fix-item"><span class="fix-num">#${i+1}</span>${esc(f)}</div>`).join('');
+  }
+  $('editorNote').textContent = data.editor_note || 'No additional notes.';
 
-          if (data.review_fixes && data.review_fixes.length) {
-            html += `<div style="margin-top:8px;font-size:11px;color:var(--accent2)">`;
-            data.review_fixes.forEach((f) => {
-              html += `<div style="margin-bottom:3px">• ${f}</div>`;
-            });
-            html += `</div>`;
-          }
+  // Social
+  const social = data.social_posts || {};
+  if (social.instagram) {
+    $('ig-image').src = 'data:image/png;base64,' + social.instagram.image_b64;
+    $('ig-caption').textContent = social.instagram.caption || '';
+  }
+  if (social.linkedin) {
+    $('li-image').src = 'data:image/png;base64,' + social.linkedin.image_b64;
+    $('li-caption').textContent = social.linkedin.post_text || '';
+  }
 
-          let panel = document.getElementById("review-panel");
-          if (!panel) {
-            panel = document.createElement("div");
-            panel.id = "review-panel";
-            panel.style.cssText =
-              "margin:0 18px 14px;padding:12px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)";
-            document.getElementById("quality-wrap").after(panel);
-          }
-          panel.innerHTML = html;
-          panel.style.display = "block";
-        }
-
-        // Images
-        if (data.images && Object.keys(data.images).length) {
-          let imgHtml = `<div style="margin-bottom:8px;font-size:11px;font-weight:600;letter-spacing:.6px;
-    text-transform:uppercase;color:var(--muted)">Generated Images</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">`;
-
-          Object.entries(data.images).forEach(([fmt, img]) => {
-            imgHtml += `
-      <div style="flex:1;min-width:180px">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:5px">${img.label}</div>
-        <img src="data:image/png;base64,${img.base64}"
-          style="width:100%;border-radius:8px;border:1px solid var(--border)" alt="${fmt}"/>
-        <a href="data:image/png;base64,${img.base64}" download="${fmt}_image.png"
-          style="display:block;margin-top:5px;font-size:11px;color:var(--accent);text-decoration:none;text-align:center">
-          ↓ Download ${img.label}
-        </a>
+  // Images tab
+  const images = data.images || {};
+  const imgKeys = Object.keys(images);
+  if (imgKeys.length) {
+    $('imageGrid').innerHTML = imgKeys.map(fmt => {
+      const img = images[fmt];
+      return `<div class="image-card">
+        <div class="image-card-header">
+          <div class="image-card-label">${img.label||fmt}</div>
+          <div class="image-card-size">${img.width}×${img.height}</div>
+        </div>
+        <img src="data:image/png;base64,${img.base64}" alt="${fmt}"/>
+        <div class="image-card-footer">
+          <button class="btn-small success" onclick="downloadImgB64('${img.base64}','${fmt}')">⬇ Download</button>
+        </div>
       </div>`;
-          });
-          imgHtml += `</div>`;
+    }).join('');
+  }
 
-          let imgSection = document.getElementById("images-section");
-          if (!imgSection) {
-            imgSection = document.createElement("div");
-            imgSection.id = "images-section";
-            imgSection.style.cssText =
-              "margin-top:16px;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)";
-            document.getElementById("blog-content").before(imgSection);
-          }
-          imgSection.innerHTML = imgHtml;
-          imgSection.style.display = "block";
-        }
-
-        // Social media posts
-        if (data.social_posts && Object.keys(data.social_posts).length) {
-          let html = "";
-
-          Object.entries(data.social_posts).forEach(([platform, post]) => {
-            const icon = platform === "instagram" ? "📸" : "💼";
-            const pname = platform.charAt(0).toUpperCase() + platform.slice(1);
-            const cap = post.caption || "";
-
-            html += `
-    <div style="margin-bottom:20px;border:1px solid var(--border);
-                border-radius:10px;overflow:hidden">
-      <div style="padding:10px 14px;background:var(--surface2);
-                  display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:13px;font-weight:600;color:var(--text)">
-          ${icon} ${pname} Post
-        </span>
-        <span style="font-family:'DM Mono',monospace;font-size:10px;
-                     color:var(--muted)">${post.dimensions}</span>
+  // FIXED: Translations tab
+  const localized = data.localized_content || {};
+  const langKeys = Object.keys(localized);
+  if (langKeys.length > 0) {
+    $('translationsWrap').innerHTML = langKeys.map(lang => `
+      <div class="review-card">
+        <div style="font-weight:bold;margin-bottom:10px;">🌍 ${lang} Translation</div>
+        <div style="font-size:12px;color:var(--muted2);">${marked(localized[lang])}</div>
       </div>
-      ${
-        post.image_b64
-          ? `
-      <div style="padding:12px;background:#000">
-        <img src="data:image/png;base64,${post.image_b64}"
-          style="width:100%;border-radius:6px;display:block" alt="${platform}"/>
-        <a href="data:image/png;base64,${post.image_b64}"
-           download="${platform}_post.png"
-           style="display:block;text-align:center;margin-top:8px;font-size:11px;
-                  color:var(--accent);text-decoration:none">
-          ↓ Download ${pname} Image
-        </a>
-      </div>`
-          : ""
-      }
-      <div style="padding:12px 14px">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;
-                    letter-spacing:.6px;color:var(--muted);margin-bottom:7px">
-          ${platform === "instagram" ? "Caption" : "Post Text"}
-        </div>
-        <div style="font-size:12px;color:#c8c8e0;line-height:1.7;
-                    white-space:pre-wrap;max-height:220px;overflow-y:auto;
-                    background:var(--surface2);padding:10px;border-radius:6px">
-${cap}
-        </div>
-        <button onclick="copyText(\`${cap.replace(/`/g, "\\`")}\`)"
-          style="margin-top:8px;width:100%;padding:7px;background:transparent;
-                 border:1px solid var(--border);border-radius:6px;color:var(--muted);
-                 font-size:11px;cursor:pointer;transition:all .2s"
-          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-          ⎘ Copy ${pname === "Instagram" ? "Caption" : "Post Text"}
-        </button>
-      </div>
-    </div>`;
-          });
+    `).join('');
+  }
 
-          let socialSection = document.getElementById("social-section");
-          if (!socialSection) {
-            socialSection = document.createElement("div");
-            socialSection.id = "social-section";
-            socialSection.style.cssText = "margin-top:16px";
-            document.querySelector(".copy-btn").before(socialSection);
-          }
 
-          const header = `<div style="font-size:11px;font-weight:600;letter-spacing:.6px;
-    text-transform:uppercase;color:var(--muted);margin-bottom:12px">
-    Social Media Posts</div>`;
-          socialSection.innerHTML = header + html;
-          socialSection.style.display = "block";
-        }
 
-        if (data.social_posts && Object.keys(data.social_posts).length) {
-          let html = "";
+  // Crumbs
+  setCrumbs(['write','validate','rag','review','images','social']);
 
-          Object.entries(data.social_posts).forEach(([platform, post]) => {
-            if (post.error) return;
+  // Footer stats
+  $('footerStats').textContent = `Quality: ${qs}/100 · Review: ${rs}/100 · RAG: ${rg}/100 · Sources: ${sources.length}`;
+  $('headerStatus').textContent = data.review_verdict === 'APPROVED' ? 'APPROVED' : 'AWAITING REVIEW';
+}
 
-            const icon = platform === "instagram" ? "📸" : "💼";
-            const pname = platform === "instagram" ? "Instagram" : "LinkedIn";
-            // Instagram uses 'caption', LinkedIn uses 'post_text'
-            const capText = post.caption || post.post_text || "";
-            const size = post.size || "";
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['blog','review','social','images','translations','schedule'][i]===name));
+  ['blog','review','social','images','translations','schedule'].forEach(t => {
+    const el = $('tab-'+t);
+    if (el) el.classList.toggle('active', t===name);
+  });
+}
 
-            html += `
-    <div style="margin-bottom:20px;border:1px solid var(--border);
-                border-radius:10px;overflow:hidden">
+function showSocial(platform) {
+  $('social-instagram').style.display = platform === 'instagram' ? 'block' : 'none';
+  $('social-linkedin').style.display = platform === 'linkedin' ? 'block' : 'none';
+  document.querySelectorAll('.soc-tab').forEach(b => {
+    b.classList.toggle('active', b.classList.contains(platform));
+  });
+}
 
-      <!-- Header -->
-      <div style="padding:10px 14px;background:var(--surface2);
-                  display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:13px;font-weight:600;color:var(--text)">
-          ${icon} ${pname}
-        </span>
-        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)">
-          ${size}
-        </span>
-      </div>
+// ── SCHEDULE ──
+function schedulePost(now = false) {
+  if (!state.data) { alert('Generate content first.'); return; }
+  const platform = $('sched-platform').value;
+  const time = now ? 'Now' : ($('sched-time').value || 'Not set');
+  const note = $('sched-note').value;
+  const title = (state.data.parsed_blog || {}).title || state.data.topic || 'Untitled';
+  const icons = { instagram:'📸', linkedin:'💼', both:'📱' };
+  const item = { platform, time, note, title, status: now ? 'sent' : 'scheduled' };
+  state.scheduleQueue.push(item);
+  renderQueue();
+  if (now) alert(`✅ Posted to ${platform} now! (Mock — connect real API)`);
+  else alert(`✅ Scheduled for ${time} on ${platform}!`);
+}
 
-      <!-- Image -->
-      ${
-        post.image_b64
-          ? `
-      <div style="background:#000;padding:12px;text-align:center">
-        <img src="data:image/png;base64,${post.image_b64}"
-             style="max-width:100%;border-radius:8px;
-                    ${platform === "instagram" ? "max-height:360px" : "width:100%"}"
-             alt="${platform} post"/>
-        <a href="data:image/png;base64,${post.image_b64}"
-           download="${platform}_post.png"
-           style="display:inline-block;margin-top:8px;font-size:11px;
-                  color:var(--accent);text-decoration:none">
-          ↓ Download ${pname} Image
-        </a>
-      </div>`
-          : ""
-      }
+function renderQueue() {
+  const q = $('scheduleQueue');
+  if (!state.scheduleQueue.length) { q.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px;">No scheduled posts yet.</div>'; return; }
+  q.innerHTML = state.scheduleQueue.map(item => `
+    <div class="queue-item">
+      <span class="queue-platform">${{instagram:'📸',linkedin:'💼',both:'📱'}[item.platform]||'📱'}</span>
+      <span class="queue-title">${esc(item.title)}</span>
+      <span class="queue-time">${item.time}</span>
+      <span class="queue-status ${item.status}">${item.status}</span>
+    </div>`).join('');
+}
 
-      <!-- Caption -->
-      <div style="padding:14px">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;
-                    letter-spacing:.6px;color:var(--muted);margin-bottom:8px">
-          ${platform === "instagram" ? "Caption" : "Post Text"}
-        </div>
-        <div style="font-size:13px;color:#c8c8e0;line-height:1.8;
-                    white-space:pre-wrap;background:var(--surface2);
-                    padding:12px;border-radius:8px;
-                    max-height:260px;overflow-y:auto;
-                    border-left:3px solid ${platform === "instagram" ? "#fa6d8f" : "#378ADD"}">
-${capText}
-        </div>
-        <button onclick="copyText(\`${capText.replace(/\\/g, "\\\\").replace(/`/g, "\\`")}\`)"
-          style="margin-top:8px;width:100%;padding:8px;background:transparent;
-                 border:1px solid var(--border);border-radius:6px;color:var(--muted);
-                 font-size:12px;cursor:pointer;font-family:'Instrument Sans',sans-serif"
-          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-          ⎘ Copy ${platform === "instagram" ? "Caption" : "Post Text"}
-        </button>
-      </div>
-    </div>`;
-          });
+// ── COPY / DOWNLOAD ──
+function copyBlog() {
+  const d = state.data;
+  if (!d) return;
+  const blog = d.parsed_blog || {};
+  const text = `# ${blog.title||''}\n\n${blog.meta_description||''}\n\n${blog.content||d.raw_blog||''}`;
+  navigator.clipboard.writeText(text).then(() => alert('✅ Copied to clipboard!'));
+}
 
-          let sec = document.getElementById("social-section");
-          if (!sec) {
-            sec = document.createElement("div");
-            sec.id = "social-section";
-            document.querySelector(".copy-btn").before(sec);
-          }
-          sec.innerHTML = `
-    <div style="font-size:11px;font-weight:600;letter-spacing:.6px;
-                text-transform:uppercase;color:var(--muted);
-                margin:16px 0 12px">Social Media Posts</div>
-    ${html}`;
-          sec.style.display = "block";
-        }
-      }
+function copyBlogHtml() {
+  const content = $('blogContent').innerHTML;
+  navigator.clipboard.writeText(content).then(() => alert('✅ HTML copied!'));
+}
 
-      function resetOutput() {
-        ["result", "error-box", "feedback-bar", "approved-banner"].forEach(
-          (id) => (document.getElementById(id).style.display = "none"),
-        );
-        document.getElementById("quality-wrap").style.display = "none";
-        document.getElementById("empty-state").style.display = "none";
-      }
+function downloadBlog() {
+  const d = state.data;
+  if (!d) return;
+  const blog = d.parsed_blog || {};
+  const text = `# ${blog.title||''}\n\n${blog.meta_description||''}\n\n${blog.content||d.raw_blog||''}`;
+  const a = document.createElement('a');
+  a.href = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(text);
+  a.download = (blog.title||'blog').replace(/\s+/g,'_').toLowerCase() + '.md';
+  a.click();
+}
 
-      function setLoading(on, msg = "Writing...") {
-        document.getElementById("gen-btn").disabled = on;
-        document.getElementById("spinner").style.display = on
-          ? "block"
-          : "none";
-        document.getElementById("btn-text").textContent = on
-          ? "Working..."
-          : "✦ Generate Blog";
-        document.getElementById("loading-overlay").style.display = on
-          ? "flex"
-          : "none";
-        document.getElementById("loading-msg").textContent = msg;
-      }
+function copyCaption(platform) {
+  const text = platform === 'ig' ? $('ig-caption').textContent : $('li-caption').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('✅ Copied!'));
+}
 
-      function showError(msg) {
-        const el = document.getElementById("error-box");
-        el.textContent = "⚠ " + msg;
-        el.style.display = "block";
-        document.getElementById("empty-state").style.display = "flex";
-      }
+function downloadImage(platform) {
+  const img = platform === 'ig' ? $('ig-image') : $('li-image');
+  const src = img.src;
+  if (!src || src.length < 10) { alert('No image available.'); return; }
+  const a = document.createElement('a');
+  a.href = src;
+  a.download = platform + '_post.png';
+  a.click();
+}
 
-      function markdownToHtml(md) {
-        return md
-          .replace(/^### (.+)$/gm, "<h3>$1</h3>")
-          .replace(/^## (.+)$/gm, "<h2>$1</h2>")
-          .replace(/^# (.+)$/gm, "<h1>$1</h1>")
-          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-          .replace(/\*(.+?)\*/g, "<em>$1</em>")
-          .replace(/`(.+?)`/g, "<code>$1</code>")
-          .replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>")
-          .replace(/^[-*] (.+)$/gm, "<li>$1</li>")
-          .split("\n\n")
-          .map((p) =>
-            p.startsWith("<h") ||
-            p.startsWith("<ul") ||
-            p.startsWith("<li") ||
-            p.startsWith("<blockquote")
-              ? p
-              : `<p>${p}</p>`,
-          )
-          .join("");
-      }
+function downloadImgB64(b64, name) {
+  const a = document.createElement('a');
+  a.href = 'data:image/png;base64,' + b64;
+  a.download = name + '.png';
+  a.click();
+}
 
-      function copyContent() {
-        if (!lastRaw) return;
-        navigator.clipboard.writeText(lastRaw).then(() => {
-          const btn = document.querySelector(".copy-btn");
-          btn.textContent = "✓ Copied!";
-          setTimeout(
-            () => (btn.textContent = "⎘ Copy full blog as Markdown"),
-            2000,
-          );
-        });
-      }
+// ── HELPERS ──
+function setLoading(on) {
+  $('loadingState').style.display = on ? 'flex' : 'none';
+  $('emptyState').style.display = on ? 'none' : ($('resultWrap').style.display === 'flex' ? 'none' : 'flex');
+  const btn = $('generateBtn');
+  btn.disabled = on;
+  $('btn-spinner').style.display = on ? 'block' : 'none';
+  $('btn-text').textContent = on ? 'Generating...' : '⚡ Generate Content';
+}
 
-      function copyText(text) {
-        navigator.clipboard.writeText(text).then(() => {
-          alert("Copied to clipboard!");
-        });
-      }
+const nodes = ['write','validate','rag','review','images','social'];
+const nodeLabels = { write:'✍️ Writing', validate:'🔍 Validating', rag:'🧠 RAG Check', review:'🔒 Reviewing', gen_images:'🖼 Generating Images', gen_social:'📱 Social Posts', human_review:'👤 Human Review', localize:'🌍 Translating' };
+let doneNodes = [];
 
-      document.addEventListener("keydown", (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") generateBlog();
-      });
-    </script>
-  </body>
+function updateLoadingStep(node) {
+  const label = nodeLabels[node] || node;
+  $('loadingStep').textContent = label;
+  $('headerStatus').textContent = label.toUpperCase();
+  const map = { write:'write', validate:'validate', rag_validate:'rag', review:'review', gen_images:'images', gen_social:'social' };
+  const key = map[node];
+  if (key && !doneNodes.includes(key)) {
+    const idx = nodes.indexOf(key);
+    doneNodes = nodes.slice(0, idx);
+    nodes.forEach(n => {
+      const el = $('ln-'+n);
+      if (!el) return;
+      if (doneNodes.includes(n)) el.className = 'loading-node done';
+      else if (n === key) el.className = 'loading-node active';
+      else el.className = 'loading-node';
+    });
+    setCrumbs(doneNodes);
+  }
+}
+
+function setCrumbs(done) {
+  nodes.forEach(n => {
+    const el = $('crumb-'+n);
+    if (!el) return;
+    el.className = 'crumb' + (done.includes(n) ? ' done' : '');
+  });
+}
+
+function showError(msg) {
+  const box = $('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+  $('emptyState').style.display = 'none';
+  $('loadingState').style.display = 'none';
+}
+
+function scoreClass(s) { return s >= 80 ? 'high' : s >= 60 ? 'mid' : 'low'; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Minimal markdown renderer
+function marked(md) {
+  if (!md) return '';
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
+    .replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/^(?!<[hbuiolpb])/gm,'')
+    .replace(/^(.+)$/gm, l => l.startsWith('<') ? l : `<p>${l}</p>`);
+}
+
+function resetUI() {
+  state.jobId = null;
+  state.data = null;
+  if (state.polling) clearInterval(state.polling);
+  
+  // Clear inputs
+  $('topic').value = '';
+  $('audience').value = '';
+  const ctx = $('context'); if(ctx) ctx.value = '';
+  const pd = $('product_details'); if(pd) pd.value = '';
+  const kf = $('key_features'); if(kf) kf.value = '';
+  const uvp = $('uvp'); if(uvp) uvp.value = '';
+  
+  // Clear UI logic
+  $('resultWrap').style.display = 'none';
+  $('humanGate').style.display = 'none';
+  $('approvedBanner').style.display = 'none';
+  $('errorBox').style.display = 'none';
+  $('emptyState').style.display = 'flex';
+  $('headerStatus').textContent = 'READY';
+  
+  setCrumbs([]);
+  if ($('localizationGrid')) $('localizationGrid').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:12px;">No languages selected or translation pending.</div>';
+}
+
+// Init
+setMode('news');
+const now = new Date(); now.setHours(now.getHours()+1);
+$('sched-time').value = now.toISOString().slice(0,16);
+</script>
+</body>
 </html>
