@@ -86,7 +86,9 @@ class SocialMediaAgent:
         )
 
         # 2. Background image
-        bg_b64 = user_image_b64 or self._gen_background(topic, title, mode, "instagram")
+        bg_b64 = user_image_b64 or self._gen_background(
+            topic, title, mode, "instagram", key_fact, key_features, uvp
+        )
 
         # 3. Render overlay
         image_b64 = self._render_instagram(bg_b64, title, mode, key_fact, key_features)
@@ -112,7 +114,9 @@ class SocialMediaAgent:
         )
 
         # 2. Background
-        bg_b64 = user_image_b64 or self._gen_background(topic, title, mode, "linkedin")
+        bg_b64 = user_image_b64 or self._gen_background(
+            topic, title, mode, "linkedin", key_fact, key_features, uvp
+        )
 
         # 3. Render
         image_b64 = self._render_linkedin(bg_b64, title, mode, key_fact, key_features)
@@ -148,13 +152,17 @@ class SocialMediaAgent:
 
     # ── BACKGROUND GENERATION ─────────────────────────────────────
 
-    def _gen_background(self, topic, title, mode, platform) -> str | None:
-        fmt_map = {"instagram": "instagram", "linkedin": "linkedin"}
+    def _gen_background(self, topic, title, mode, platform, key_fact="", key_features="", uvp="") -> str | None:
         result  = self.img_gen.generate(
-            title=title, topic=topic, mode=mode,
-            formats=[fmt_map[platform]]
+            title=title,
+            topic=topic,
+            mode=mode,
+            formats=[platform],
+            key_fact=key_fact,
+            key_features=key_features,
+            uvp=uvp,
         )
-        img = result.get("images", {}).get(fmt_map[platform])
+        img = result.get("images", {}).get(platform)
         return img.get("base64") if img else None
 
     # ── INSTAGRAM RENDERER (1080x1080) ────────────────────────────

@@ -34,6 +34,7 @@ class ReviewAgent:
             "mode":       mode,
             "brand_tone": BRAND_TONE,
             "brand_name": BRAND_NAME,
+            "source_context": "",
         })
 
         result = self._parse(raw)
@@ -83,7 +84,8 @@ class ReviewAgent:
         val = m.group(1).strip()
         if val.upper() == "NONE" or not val:
             return []
-        return [v.strip() for v in val.split(",") if v.strip()]
+        parts = re.split(r"\s+\|\s+|,\s*", val)
+        return [v.strip() for v in parts if v.strip()]
 
     def _extract_bullet_list(self, text: str, key: str) -> list:
         m = re.search(rf"{key}:\n(.*?)(?:\n[A-Z_]+:|$)", text, re.DOTALL)

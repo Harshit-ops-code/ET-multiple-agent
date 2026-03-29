@@ -8,6 +8,8 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
 STABILITY_API_KEY = os.getenv("STABILITY_API_KEY")
+BYTEZ_API_KEY = os.getenv("BYTEZ_API_KEY")
+BYTEZ_IMAGE_MODEL = os.getenv("BYTEZ_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0")
 BRAND_TONE        = "professional and authoritative"
 BRAND_NAME        = "ET-AI"  # change to your actual brand name
 
