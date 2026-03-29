@@ -8,8 +8,9 @@ The project uses:
 - `LangGraph` for the generation workflow
 - `Groq` for LLM-powered writing, review, and translation
 - `Tavily` and `NewsAPI` for news-mode research
-- `Stability AI` for image generation
-- a small `C++` localization engine wrapper for the translation stage
+- `Bytez` as the preferred image generation provider
+- `Stability AI` as an image-generation fallback
+- a small `C++` localization engine wrapper plus Groq fallback translation
 
 ## Features
 
@@ -67,8 +68,11 @@ Create a `.env` file in the project root with:
 
 ```env
 GROQ_API_KEY=your_groq_key
+GROQ_MODEL=llama-3.3-70b-versatile
 TAVILY_API_KEY=your_tavily_key
 STABILITY_API_KEY=your_stability_key
+BYTEZ_API_KEY=your_bytez_key
+BYTEZ_IMAGE_MODEL=stabilityai/stable-diffusion-xl-base-1.0
 NEWSAPI_KEY=your_newsapi_key
 HF_TOKEN=optional_huggingface_token
 ```
@@ -76,9 +80,12 @@ HF_TOKEN=optional_huggingface_token
 Notes:
 
 - `GROQ_API_KEY` is required for blog generation, review, and translation.
+- `GROQ_MODEL` is optional. If omitted, the app falls back to the default from `config.py`.
 - `TAVILY_API_KEY` is used for news research.
 - `NEWSAPI_KEY` supports additional news retrieval.
-- `STABILITY_API_KEY` is required for image generation.
+- `BYTEZ_API_KEY` is the preferred key for image generation.
+- `BYTEZ_IMAGE_MODEL` is optional and defaults to `stabilityai/stable-diffusion-xl-base-1.0`.
+- `STABILITY_API_KEY` is optional fallback support for image generation.
 - `HF_TOKEN` is optional in the current codebase.
 
 ## Installation
@@ -111,6 +118,8 @@ This starts:
 
 - backend at `http://127.0.0.1:8000`
 - frontend at `http://127.0.0.1:5500/index.html`
+
+`start.ps1` now clears stale listeners on ports `8000` and `5500` before launching, which helps avoid old backend/frontend instances hanging around between restarts.
 
 ### Option 2: Manual
 
@@ -151,7 +160,9 @@ Important behavior:
 
 - Translation only runs after the user approves the content.
 - The frontend sends selected target languages during generate and approval.
-- Localization uses the C++ engine plus LLM translation through Groq.
+- Social image generation reuses already-generated platform images when available instead of regenerating them.
+- Image generation runs selected formats in parallel.
+- Localization first pings the C++ layer if present, then performs the actual translations through Groq in parallel.
 
 ## API Endpoints
 
@@ -242,6 +253,11 @@ Check:
 - target languages are selected in the UI
 - content is approved, not just generated
 
+Notes:
+
+- if `engine/localization_agent.exe` is missing, the app now falls back to Groq-only translation
+- translations are generated after approval, not during the first draft pass
+
 ### News mode has weak context
 
 Check:
@@ -253,8 +269,15 @@ Check:
 
 Check:
 
+- `BYTEZ_API_KEY`
 - `STABILITY_API_KEY`
 - image generation toggle in the UI
+
+Notes:
+
+- Bytez is the preferred provider
+- Stability is only used as fallback
+- if Instagram/LinkedIn images were already generated in the image stage, the social stage reuses them for speed
 
 ### App starts but frontend cannot connect
 
