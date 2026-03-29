@@ -1,6 +1,6 @@
 import subprocess
+import json
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class LocalizationWrapper:
     def __init__(self):
@@ -41,22 +41,16 @@ class LocalizationWrapper:
             from langchain_core.output_parsers import StrOutputParser
             from config import GROQ_API_KEY, GROQ_MODEL
             
-            def translate_one(lang: str) -> tuple[str, str]:
+            llm = ChatGroq(api_key=GROQ_API_KEY, model_name=GROQ_MODEL, temperature=0.3)
+            
+            for lang in target_languages:
                 print(f"[LocalizationWrapper] Generating real AI translation for {lang}...")
-                llm = ChatGroq(api_key=GROQ_API_KEY, model_name=GROQ_MODEL, temperature=0.3)
                 prompt = ChatPromptTemplate.from_messages([
                     ("system", f"You are a professional localization expert. Translate the following content into {lang}. Preserve all markdown formatting flawlessly."),
                     ("human", "{blog}")
                 ])
                 chain = prompt | llm | StrOutputParser()
-                return lang, chain.invoke({"blog": final_blog})
-
-            max_workers = min(4, max(1, len(target_languages)))
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = [executor.submit(translate_one, lang) for lang in target_languages]
-                for future in as_completed(futures):
-                    lang, translated = future.result()
-                    results[lang] = translated
+                results[lang] = chain.invoke({"blog": final_blog})
             print(f"[LocalizationWrapper] Successfully retrieved {len(results)} translations.")
             return results
 
