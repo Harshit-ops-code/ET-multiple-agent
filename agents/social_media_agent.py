@@ -12,6 +12,7 @@ from prompts.social_media_prompt import (
 from config import GROQ_API_KEY, GROQ_MODEL, BRAND_NAME, OUTPUT_DIR
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import os, io, base64, textwrap, re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 
@@ -35,13 +36,16 @@ class SocialMediaAgent:
 
     def generate(self, blog_data: dict, mode: str,
                  platforms: list = None,
-                 user_image_b64: str = None) -> dict:
+                 user_image_b64: str = None,
+                 existing_images: dict = None) -> dict:
         """
         Generate social media posts.
         user_image_b64: optional base64 image uploaded by user
         """
         if platforms is None:
             platforms = ["instagram", "linkedin"]
+        if existing_images is None:
+            existing_images = {}
 
         topic        = blog_data.get("topic", "")
         title        = blog_data.get("title", topic)
@@ -53,31 +57,40 @@ class SocialMediaAgent:
         # Extract key fact for news mode
         key_fact = self._extract_key_fact(content) if mode == "news" else ""
 
-        results = {}
-        for platform in platforms:
+        def build_platform(platform: str):
             print(f"\n[SocialMediaAgent] {platform} {mode} post...")
-            try:
-                if platform == "instagram":
-                    results["instagram"] = self._make_instagram(
-                        topic, title, mode, content, key_fact,
-                        key_features, uvp, user_image_b64
-                    )
-                elif platform == "linkedin":
-                    results["linkedin"] = self._make_linkedin(
-                        topic, title, mode, content, key_fact,
-                        key_features, uvp, audience, user_image_b64
-                    )
-            except Exception as e:
-                print(f"[SocialMediaAgent] {platform} error: {e}")
-                import traceback; traceback.print_exc()
-                results[platform] = {"error": str(e)}
+            if platform == "instagram":
+                return platform, self._make_instagram(
+                    topic, title, mode, content, key_fact,
+                    key_features, uvp, user_image_b64, existing_images
+                )
+            if platform == "linkedin":
+                return platform, self._make_linkedin(
+                    topic, title, mode, content, key_fact,
+                    key_features, uvp, audience, user_image_b64, existing_images
+                )
+            return platform, {"error": f"Unsupported platform: {platform}"}
+
+        results = {}
+        max_workers = min(len(platforms), 2)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_map = {executor.submit(build_platform, platform): platform for platform in platforms}
+            for future in as_completed(future_map):
+                platform = future_map[future]
+                try:
+                    name, payload = future.result()
+                    results[name] = payload
+                except Exception as e:
+                    print(f"[SocialMediaAgent] {platform} error: {e}")
+                    import traceback; traceback.print_exc()
+                    results[platform] = {"error": str(e)}
 
         return results
 
     # ── INSTAGRAM ─────────────────────────────────────────────────
 
     def _make_instagram(self, topic, title, mode, content, key_fact,
-                         key_features, uvp, user_image_b64) -> dict:
+                         key_features, uvp, user_image_b64, existing_images) -> dict:
         # 1. Caption
         caption = self._caption(
             INSTAGRAM_NEWS_CAPTION if mode == "news" else INSTAGRAM_PRODUCT_CAPTION,
@@ -86,8 +99,16 @@ class SocialMediaAgent:
         )
 
         # 2. Background image
-        bg_b64 = user_image_b64 or self._gen_background(
-            topic, title, mode, "instagram", key_fact, key_features, uvp
+        bg_b64 = self._resolve_background(
+            platform="instagram",
+            user_image_b64=user_image_b64,
+            existing_images=existing_images,
+            topic=topic,
+            title=title,
+            mode=mode,
+            key_fact=key_fact,
+            key_features=key_features,
+            uvp=uvp,
         )
 
         # 3. Render overlay
@@ -105,7 +126,7 @@ class SocialMediaAgent:
     # ── LINKEDIN ──────────────────────────────────────────────────
 
     def _make_linkedin(self, topic, title, mode, content, key_fact,
-                        key_features, uvp, audience, user_image_b64) -> dict:
+                        key_features, uvp, audience, user_image_b64, existing_images) -> dict:
         # 1. Post text
         post_text = self._caption(
             LINKEDIN_NEWS_CAPTION if mode == "news" else LINKEDIN_PRODUCT_CAPTION,
@@ -114,8 +135,16 @@ class SocialMediaAgent:
         )
 
         # 2. Background
-        bg_b64 = user_image_b64 or self._gen_background(
-            topic, title, mode, "linkedin", key_fact, key_features, uvp
+        bg_b64 = self._resolve_background(
+            platform="linkedin",
+            user_image_b64=user_image_b64,
+            existing_images=existing_images,
+            topic=topic,
+            title=title,
+            mode=mode,
+            key_fact=key_fact,
+            key_features=key_features,
+            uvp=uvp,
         )
 
         # 3. Render
@@ -149,6 +178,27 @@ class SocialMediaAgent:
         prompt = ChatPromptTemplate.from_messages([("human", KEY_FACT_EXTRACTOR)])
         chain  = prompt | self.llm | StrOutputParser()
         return chain.invoke({"content": content[:1500]}).strip()
+
+    def _resolve_background(
+        self,
+        platform,
+        user_image_b64,
+        existing_images,
+        topic,
+        title,
+        mode,
+        key_fact,
+        key_features,
+        uvp,
+    ) -> str | None:
+        if user_image_b64:
+            return user_image_b64
+
+        cached = (existing_images or {}).get(platform, {})
+        if cached.get("base64"):
+            return cached["base64"]
+
+        return self._gen_background(topic, title, mode, platform, key_fact, key_features, uvp)
 
     # ── BACKGROUND GENERATION ─────────────────────────────────────
 

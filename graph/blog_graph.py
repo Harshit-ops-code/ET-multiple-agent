@@ -332,7 +332,8 @@ def generate_social_posts(state: BlogState) -> BlogState:
             },
             mode=state["mode"],
             platforms=platforms,
-            user_image_b64=state.get("user_image_b64"),   
+            user_image_b64=state.get("user_image_b64"),
+            existing_images=state.get("images", {}),
         )
         return {**state, "social_posts": posts}
 

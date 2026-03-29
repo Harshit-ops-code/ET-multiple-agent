@@ -1,5 +1,6 @@
 import base64
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 import requests
@@ -69,12 +70,24 @@ class ImageGenerator:
             return {"images": {}, "error": "No image provider configured"}
 
         results = {}
-        for fmt in formats:
-            print(f"[ImageGenerator] Generating {fmt} image...")
-            prompt = self._build_prompt(title, topic, mode, fmt, key_fact, key_features, uvp)
-            img = self._call_provider(prompt, negative, fmt)
-            if img:
-                results[fmt] = img
+        max_workers = min(len(formats), 3)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_map = {}
+            for fmt in formats:
+                prompt = self._build_prompt(title, topic, mode, fmt, key_fact, key_features, uvp)
+                print(f"[ImageGenerator] Queueing {fmt} image...")
+                future = executor.submit(self._call_provider, prompt, negative, fmt)
+                future_map[future] = fmt
+
+            for future in as_completed(future_map):
+                fmt = future_map[future]
+                try:
+                    img = future.result()
+                except Exception as exc:
+                    print(f"[ImageGenerator] Unexpected async error on {fmt}: {exc}")
+                    img = None
+                if img:
+                    results[fmt] = img
 
         print(f"[ImageGenerator] Done - {len(results)}/{len(formats)} images generated")
         return {
