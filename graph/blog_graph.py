@@ -7,7 +7,7 @@ from config import GROQ_API_KEY, GROQ_MODEL, MAX_REGENERATIONS
 from prompts.blog_writer_prompt import (
     SYSTEM_PROMPT_NEWS, SYSTEM_PROMPT_PRODUCT,
     HUMAN_TEMPLATE_NEWS, HUMAN_TEMPLATE_PRODUCT,
-    REFINEMENT_TEMPLATE,
+    REFINEMENT_SYSTEM_PROMPT, REFINEMENT_HUMAN_TEMPLATE,
 )
 from agents.review_agent import ReviewAgent
 from agents.image_generator import ImageGenerator
@@ -111,9 +111,8 @@ def write_blog(state: BlogState) -> BlogState:
     else:
         # Refinement pass with feedback
         prompt = ChatPromptTemplate.from_messages([
-            ("system", SYSTEM_PROMPT_NEWS if state["mode"] == "news"
-                       else SYSTEM_PROMPT_PRODUCT),
-            ("human",  REFINEMENT_TEMPLATE),
+            ("system", REFINEMENT_SYSTEM_PROMPT),
+            ("human",  REFINEMENT_HUMAN_TEMPLATE),
         ])
         chain = prompt | llm | StrOutputParser()
         raw = chain.invoke({
@@ -173,6 +172,7 @@ def _parse_blog(raw: str) -> dict:
         ("title",            r"TITLE:\s*(.+)"),
         ("meta_description", r"META_DESCRIPTION:\s*(.+)"),
         ("reading_time",     r"READING_TIME:\s*(.+)"),
+        ("word_count",       r"WORD_COUNT:\s*(.+)"),
         ("seo_keywords",     r"SEO_KEYWORDS:\s*(.+)"),
         ("target_cta",       r"TARGET_CTA:\s*(.+)"),
         ("sources_used",     r"SOURCES_USED:\s*(.+)"),

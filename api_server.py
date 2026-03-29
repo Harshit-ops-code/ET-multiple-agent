@@ -53,7 +53,7 @@ def run_pipeline(job_id: str, req: GenerateRequest):
     from agents.web_search import WebSearchAgent
 
     jobs[job_id]["status"] = "running"
-    jobs[job_id]["current_node"] = "write"
+    jobs[job_id]["current_node"] = "starting"
 
     try:
         context = req.context
@@ -67,6 +67,9 @@ def run_pipeline(job_id: str, req: GenerateRequest):
                 sources = result.get("sources", [])
             except Exception as e:
                 print(f"[WebSearch] Error: {e} — continuing without search")
+
+        if req.mode != "news":
+            jobs[job_id]["current_node"] = "write"
 
         initial_state: BlogState = {
             "mode": req.mode,
@@ -115,6 +118,7 @@ def run_pipeline(job_id: str, req: GenerateRequest):
         }
 
         final_state = initial_state.copy()
+        jobs[job_id]["current_node"] = "write"
         for event in blog_graph.stream(initial_state):
             for node_name, node_state in event.items():
                 jobs[job_id]["current_node"] = node_map.get(node_name, node_name)
@@ -209,6 +213,7 @@ def get_status(job_id: str):
         "images": {k: {"base64": v.get("base64",""), "label": v.get("label",""), "width": v.get("width",0), "height": v.get("height",0)} for k, v in (d.get("images") or {}).items()},
         "social_posts": {k: {"caption": v.get("caption", v.get("post_text", "")), "post_text": v.get("post_text", v.get("caption", "")), "image_b64": v.get("image_b64", ""), "size": v.get("size",""), "platform": v.get("platform", k)} for k, v in (d.get("social_posts") or {}).items()},
         "localized_content": d.get("localized_content", {}), # FIXED: Expose translations to UI
+        "target_languages": d.get("target_languages", []),
         "iteration": d.get("iteration", 0),
         "approved": d.get("approved", False),
         "mode": d.get("mode", ""),
