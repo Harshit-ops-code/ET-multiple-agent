@@ -15,6 +15,8 @@ The project uses:
 
 ## Features
 
+- **Interactive 3D Landing Page**: A split-column hero landing fold with an animated, mathematically projected 3D geodesic sphere mesh representing the AI Agent Core that waves and rotates dynamically on mouse/touch drag.
+- **Glassmorphic Gated Access**: Security gate requiring credentials login or signup before entry. Computes initials from email (e.g. `harsh@lexis.ai` -> `HA`) and displays personalized profile avatar badges in both headers.
 - **Dual-Mode Writing:** News Blog (with web crawler search context) and Product Launch modes.
 - **Structured Agentic Pipeline:**
   1. `write` — Composes first drafts using Groq.
