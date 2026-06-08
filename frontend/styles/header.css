@@ -1,0 +1,171 @@
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-mark {
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+
+.logo-name {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.logo-name span {
+  color: var(--accent);
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Connected Pipeline Stepper circuit */
+.pipeline-crumb {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 99px;
+  position: relative;
+}
+
+.crumb {
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  position: relative;
+  z-index: 2;
+}
+
+/* Wires connecting nodes */
+.crumb-sep {
+  width: 16px;
+  height: 2px;
+  background: var(--surface3);
+  font-size: 0 !important; /* Hide standard '>' character */
+  color: transparent !important;
+  margin: 0 -1px;
+  position: relative;
+  z-index: 1;
+  transition: var(--transition);
+}
+
+.crumb.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--surface);
+  animation: activeStepGlow 1.6s infinite alternate;
+}
+
+.crumb.done {
+  color: var(--green);
+  border-color: rgba(5, 150, 105, 0.3);
+  background: rgba(5, 150, 105, 0.03);
+}
+
+/* Glowing connections based on pipeline stages */
+.crumb.done + .crumb-sep {
+  background: linear-gradient(90deg, var(--green) 0%, var(--accent) 100%);
+  box-shadow: 0 0 6px rgba(5, 150, 105, 0.3);
+}
+
+.crumb.active + .crumb-sep {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--surface3) 100%);
+}
+
+@keyframes activeStepGlow {
+  0% {
+    box-shadow: 0 0 4px rgba(79, 70, 229, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(79, 70, 229, 0.4), 0 0 0 4px rgba(79, 70, 229, 0.06);
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Pulsing Status Pill */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--muted);
+  box-shadow: var(--shadow);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(5, 150, 105, 0.5);
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+}

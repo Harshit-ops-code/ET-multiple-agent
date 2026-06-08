@@ -1,0 +1,476 @@
+/* Empty State Showcase */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: var(--shadow);
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.empty-state p {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.empty-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.empty-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  box-shadow: var(--shadow);
+}
+
+.empty-feature-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 5px;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(79, 70, 229, 0.4);
+}
+
+@media (max-width: 600px) {
+  .empty-features {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Loading Layout Control */
+.loading-state {
+  flex: 1;
+  display: none;
+  align-items: stretch;
+  justify-content: center;
+  padding: 24px;
+}
+
+.loading-shell {
+  width: 100%;
+  max-width: 1080px;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 20px;
+}
+
+.loading-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.loading-hero {
+  position: relative;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.loading-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  padding: 5px 10px;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  border-radius: 99px;
+  background: rgba(79, 70, 229, 0.05);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.loading-kicker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+  animation: pulseGlow 1.8s infinite;
+}
+
+.loading-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.loading-copy {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.loading-meter {
+  display: block;
+  padding: 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* Telemetry Radar Spinner - Hidden in favor of 3D Canvas */
+.loading-ring {
+  display: none;
+}
+
+/* 3D Viewport Panel */
+.loading-3d-viewport {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#loading3DCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+#loading3DCanvas:active {
+  cursor: grabbing;
+}
+
+.viewport-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.hud-tag {
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.hud-coords {
+  color: var(--muted);
+}
+
+.loading-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loading-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.loading-step {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.loading-percent {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.loading-progress-track {
+  height: 6px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--surface3);
+}
+
+.loading-progress-fill {
+  height: 100%;
+  width: 6%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), var(--teal), var(--green));
+  transition: width 0.4s ease;
+}
+
+/* Stopwatch Timer Layout */
+.loading-stage-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.loading-stage-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.loading-stage-meta {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.loading-stage-time {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+  justify-content: center;
+  border-left: 1px solid var(--border);
+  padding-left: 16px;
+  min-width: 90px;
+}
+
+.loading-stage-caption {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.loading-stage-elapsed {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Nodes flow chart list */
+.loading-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.loading-node {
+  padding: 5px 10px;
+  border-radius: 99px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface2);
+  transition: var(--transition);
+}
+
+.loading-node.active {
+  border-color: var(--accent);
+  color: #ffffff;
+  background: var(--accent);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  animation: pulseGlow 1.5s infinite;
+}
+
+.loading-node.done {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(5, 150, 105, 0.05);
+}
+
+.loading-node.pending {
+  opacity: 0.6;
+}
+
+.loading-side {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface2);
+}
+
+.loading-side-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+
+.loading-side-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.loading-insight {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.loading-subtext {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* Styled Sub-task Agent Terminal Log Feed */
+.loading-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 200px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: #18181b; /* Pitch dark terminal overlay */
+  color: #a1a1aa;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.loading-log-item {
+  display: flex;
+  gap: 8px;
+  line-height: 1.4;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.loading-log-item:last-child {
+  border-bottom: none;
+}
+
+.loading-log-time {
+  color: #3b82f6; /* Blue timestamp tag */
+  flex-shrink: 0;
+}
+
+.loading-log-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.loading-log-title {
+  font-weight: 600;
+  color: #f4f4f5; /* clean light text */
+}
+
+.loading-log-desc {
+  color: #71717a; /* grey subtext */
+}
+
+/* Session Telemetry Numbers */
+.loading-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.loading-stat {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+
+.loading-stat-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.loading-stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.3);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(79, 70, 229, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+  }
+}

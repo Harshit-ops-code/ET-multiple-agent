@@ -1,0 +1,138 @@
+/* Breakpoint: tablet and below (≤ 900px) */
+@media (max-width: 900px) {
+  body, .app {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .main {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    max-height: 56px; /* collapsed drawer */
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .sidebar.open {
+    max-height: 1500px; /* expanded drawer */
+  }
+
+  /* Drawer toggle button for mobile only */
+  .sidebar-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .sidebar-toggle .arrow {
+    transition: transform 0.25s ease;
+  }
+
+  .sidebar.open .sidebar-toggle .arrow {
+    transform: rotate(180deg);
+  }
+
+  .output {
+    width: 100%;
+    min-height: 60vh;
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+
+  /* Horizontal scrolling for tab bar on small viewports */
+  .tabs-row {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-btn {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  .pipeline-crumb {
+    font-size: 8px;
+    gap: 2px;
+  }
+
+  .loading-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Breakpoint: phone (≤ 480px) */
+@media (max-width: 480px) {
+  header {
+    padding: 0 16px;
+  }
+  
+  .header-center {
+    display: none; /* Hide crumbs on phone viewports for space */
+  }
+
+  .sidebar-section {
+    padding: 16px;
+  }
+
+  .btn-generate {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .score-bar {
+    padding: 12px 16px;
+    font-size: 11px;
+    gap: 10px;
+  }
+
+  .blog-area {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  .blog-title {
+    font-size: 20px;
+  }
+
+  .review-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .image-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #humanGateBanner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 12px 16px !important;
+  }
+
+  #humanGateBanner > div:last-child {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  #humanGateBanner button {
+    flex: 1;
+    padding: 8px;
+  }
+}

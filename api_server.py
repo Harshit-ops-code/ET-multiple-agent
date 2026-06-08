@@ -1,296 +1,406 @@
 """
-ET-AI Content Engine — FastAPI Backend
-Connects the LangGraph blog_graph to the frontend UI.
+ET-AI Content Engine — FastAPI Backend (fixed)
+
+Fixes applied vs original:
+  #2  — CORS: allow_credentials removed, origins read from env
+  #3  — Rate limiting via slowapi (10 generate requests / minute / IP)
+  #7  — Raw threads replaced with FastAPI BackgroundTasks
+  #8  — Job TTL / cleanup handled by JobStore (jobs.db, 2-hour expiry)
+  #9  — Top-level imports instead of inside functions
+  #11 — Pydantic field validators: topic required, length capped, mode enum
+  #12 — stdlib logging replaces print()
+  #13 — Polling interval cleaned up on error inside pipeline
+
+Install new deps:
+    pip install slowapi limits
 """
-import uuid, time, threading, traceback
-from fastapi import FastAPI, HTTPException
+
+import uuid
+import time
+import logging
+import traceback
+from contextlib import asynccontextmanager
+import os
+from dotenv import load_dotenv
+
+# Load env variables early
+load_dotenv()
+
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from fastapi.responses import RedirectResponse
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 import os
 
-app = FastAPI(title="ET-AI Content Engine", version="2.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+# ── Fix #9: all project imports at the top ───────────────────────────────────
+from job_store import job_store                         # Fix #1 (persistent store)
+from graph.blog_graph import blog_graph, BlogState, run_localization
+from agents.web_search import WebSearchAgent
+from agents.scheduler import SocialScheduler, get_scheduled_posts
 
-# Serve frontend
+# ── Fix #12: proper logging ───────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("et_api")
+
+# ── Fix #3: rate limiting ─────────────────────────────────────────────────────
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
+
+# ── App factory ───────────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("ET-AI Content Engine starting up")
+    yield
+    logger.info("ET-AI Content Engine shutting down")
+
+app = FastAPI(title="ET-AI Content Engine", version="2.1.0", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# ── Fix #2: CORS — origins from env, no credentials wildcard ─────────────────
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000,http://localhost:5500,http://127.0.0.1:5500")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,          # was True with * — invalid combo
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
+
 if os.path.exists("frontend"):
     app.mount("/app", StaticFiles(directory="frontend", html=True), name="frontend")
 
-jobs = {}
+# ── Request models ────────────────────────────────────────────────────────────
 
-# ── Request models ──
 class GenerateRequest(BaseModel):
-    mode: str = "news"
-    topic: str
-    audience: str = "general professional audience"
-    length: int = 1000
-    context: str = ""
-    product_details: str = ""
-    key_features: str = ""
-    uvp: str = ""
+    # Fix #11: validators guard against blank topics & out-of-range values
+    mode: str = Field("news", pattern="^(news|product)$")
+    topic: str = Field(..., min_length=5, max_length=500)
+    audience: str = Field("general professional audience", max_length=200)
+    length: int = Field(1000, ge=300, le=2000)
+    context: str = Field("", max_length=2000)
+    product_details: str = Field("", max_length=2000)
+    key_features: str = Field("", max_length=1000)
+    uvp: str = Field("", max_length=500)
     generate_images: bool = True
     image_formats: List[str] = ["blog", "instagram", "linkedin"]
     social_platforms: List[str] = ["instagram", "linkedin"]
     user_image_b64: Optional[str] = None
-    target_languages: List[str] = [] # FIXED: Added languages to the model
+    target_languages: List[str] = []
+    tone: str = Field("professional", pattern="^(professional|conversational|authoritative|playful|educational)$")
+
+    @field_validator("image_formats")
+    @classmethod
+    def valid_image_formats(cls, v):
+        allowed = {"blog", "instagram", "linkedin", "twitter"}
+        return [f for f in v if f in allowed]
+
+    @field_validator("social_platforms")
+    @classmethod
+    def valid_platforms(cls, v):
+        allowed = {"instagram", "linkedin", "twitter"}
+        return [p for p in v if p in allowed]
+
 
 class FeedbackRequest(BaseModel):
     job_id: str
-    action: str  # "approve" or "refine"
-    feedback: str = ""
+    action: str = Field(..., pattern="^(approve|refine)$")
+    feedback: str = Field("", max_length=1000)
     target_languages: List[str] = []
+
 
 class ScheduleRequest(BaseModel):
     job_id: str
-    platform: str
+    platform: str = Field(..., pattern="^(instagram|linkedin|both)$")
     time: str
-    note: str
+    note: str = Field("", max_length=500)
 
-# ── Background pipeline runner ──
-def run_pipeline(job_id: str, req: GenerateRequest):
-    from graph.blog_graph import blog_graph, BlogState
-    from agents.web_search import WebSearchAgent
 
-    jobs[job_id]["status"] = "running"
-    jobs[job_id]["current_node"] = "starting"
+# ── Pipeline helpers ──────────────────────────────────────────────────────────
+
+def _build_initial_state(req: GenerateRequest, context: str, sources: list) -> BlogState:
+    return {
+        "mode": req.mode,
+        "topic": req.topic,
+        "audience": req.audience,
+        "length": req.length,
+        "tone": req.tone,
+        "context": context,
+        "product_details": req.product_details,
+        "key_features": req.key_features,
+        "uvp": req.uvp,
+        "raw_blog": "",
+        "parsed_blog": {},
+        "quality_score": 0.0,
+        "quality_issues": "",
+        "sources": sources,
+        "rag_verdict": "",
+        "rag_summary": "",
+        "rag_suggestions": [],
+        "rag_score": 0.0,
+        "review_verdict": "",
+        "review_score": 0,
+        "review_checks": {},
+        "review_fixes": [],
+        "editor_note": "",
+        "images": {},
+        "generate_images": req.generate_images,
+        "image_formats": req.image_formats,
+        "user_image_b64": req.user_image_b64,
+        "social_posts": {},
+        "social_platforms": req.social_platforms,
+        "target_languages": req.target_languages,
+        "localized_content": {},
+        "human_feedback": "",
+        "approved": False,
+        "iteration": 0,
+    }
+
+
+NODE_MAP = {
+    "write": "write",
+    "validate": "validate",
+    "rag_validate": "rag",
+    "review": "review",
+    "gen_images": "gen_images",
+    "gen_social": "gen_social",
+    "human_review": "human_review",
+}
+
+
+def run_pipeline(job_id: str, req: GenerateRequest) -> None:
+    """
+    Fix #7: called by BackgroundTasks — no raw threading.Thread needed.
+    Fix #13: always cleans up status on both success and error paths.
+    """
+    job_store.update(job_id, {"status": "running", "current_node": "starting"})
+    logger.info("Pipeline started for job %s (mode=%s topic=%s)", job_id, req.mode, req.topic[:60])
 
     try:
         context = req.context
-        sources = []
+        sources: list = []
+
         if req.mode == "news":
-            jobs[job_id]["current_node"] = "web_search"
+            job_store.update(job_id, {"current_node": "web_search"})
             try:
-                searcher = WebSearchAgent()
-                result = searcher.search(req.topic)
+                result  = WebSearchAgent().search(req.topic)
                 context = result.get("context", req.context)
                 sources = result.get("sources", [])
             except Exception as e:
-                print(f"[WebSearch] Error: {e} — continuing without search")
+                logger.warning("WebSearch failed for job %s: %s — continuing", job_id, e)
 
-        if req.mode != "news":
-            jobs[job_id]["current_node"] = "write"
+        initial_state = _build_initial_state(req, context, sources)
+        final_state   = initial_state.copy()
 
-        initial_state: BlogState = {
-            "mode": req.mode,
-            "topic": req.topic,
-            "audience": req.audience,
-            "length": req.length,
-            "context": context,
-            "product_details": req.product_details,
-            "key_features": req.key_features,
-            "uvp": req.uvp,
-            "raw_blog": "",
-            "parsed_blog": {},
-            "quality_score": 0.0,
-            "quality_issues": "",
-            "sources": sources,
-            "rag_verdict": "",
-            "rag_summary": "",
-            "rag_suggestions": [],
-            "rag_score": 0.0,
-            "review_verdict": "",
-            "review_score": 0,
-            "review_checks": {},
-            "review_fixes": [],
-            "editor_note": "",
-            "images": {},
-            "generate_images": req.generate_images,
-            "image_formats": req.image_formats,
-            "user_image_b64": req.user_image_b64,
-            "social_posts": {},
-            "social_platforms": req.social_platforms,
-            "target_languages": req.target_languages, # FIXED: Pass languages to graph
-            "localized_content": {},                  # FIXED: Initialize dict
-            "human_feedback": "",
-            "approved": False,
-            "iteration": 0,
-        }
+        job_store.update(job_id, {"current_node": "write"})
 
-        node_map = {
-            "write": "write",
-            "validate": "validate",
-            "rag_validate": "rag",
-            "review": "review",
-            "gen_images": "gen_images",
-            "gen_social": "gen_social",
-            "human_review": "human_review",
-        }
-
-        final_state = initial_state.copy()
-        jobs[job_id]["current_node"] = "write"
         for event in blog_graph.stream(initial_state):
             for node_name, node_state in event.items():
-                jobs[job_id]["current_node"] = node_map.get(node_name, node_name)
+                job_store.update(job_id, {"current_node": NODE_MAP.get(node_name, node_name)})
                 if isinstance(node_state, dict):
                     final_state.update(node_state)
 
-        jobs[job_id].update({
-            "status": "awaiting_human",
+        job_store.update(job_id, {
+            "status":       "awaiting_human",
             "current_node": "human_review",
-            "data": final_state,
-            "sources": sources,
+            "data":         final_state,
+            "sources":      sources,
         })
+        logger.info("Pipeline awaiting human review for job %s", job_id)
 
     except Exception as e:
-        traceback.print_exc()
-        jobs[job_id]["status"] = "error"
-        jobs[job_id]["error"] = str(e)
+        logger.error("Pipeline error for job %s: %s", job_id, traceback.format_exc())
+        job_store.update(job_id, {"status": "error", "error": str(e)})
 
 
-def resume_pipeline(job_id: str):
-    from graph.blog_graph import blog_graph
+def resume_pipeline(job_id: str) -> None:
+    """Fix #13: error path also sets status so polling stops."""
+    job = job_store.get(job_id)
+    if not job:
+        return
 
-    jobs[job_id]["status"] = "running"
-    job = jobs[job_id]
+    job_store.update(job_id, {"status": "running"})
     state = job["data"].copy()
-    state["human_feedback"] = job.get("pending_feedback", "")
-    state["approved"] = job.get("pending_action") == "approve"
+    state["human_feedback"] = job.get("data", {}).get("pending_feedback", "")
+    state["approved"]       = job.get("data", {}).get("pending_action") == "approve"
 
     try:
         final_state = state.copy()
         for event in blog_graph.stream(state):
             for node_name, node_state in event.items():
-                jobs[job_id]["current_node"] = node_name
+                job_store.update(job_id, {"current_node": node_name})
                 if isinstance(node_state, dict):
                     final_state.update(node_state)
 
-        jobs[job_id]["data"] = final_state
-        if state["approved"]:
-            jobs[job_id]["status"] = "completed"
-        else:
-            jobs[job_id]["status"] = "awaiting_human"
+        job_store.update(job_id, {"data": final_state})
+
+        new_status = "completed" if state["approved"] else "awaiting_human"
+        job_store.update(job_id, {"status": new_status})
 
     except Exception as e:
-        traceback.print_exc()
-        jobs[job_id]["status"] = "error"
-        jobs[job_id]["error"] = str(e)
+        logger.error("Resume error for job %s: %s", job_id, traceback.format_exc())
+        job_store.update(job_id, {"status": "error", "error": str(e)})
 
 
-# ── API endpoints ──
+def run_localization_task(job_id: str) -> None:
+    """Fix #13: error sets status correctly so polling stops."""
+    try:
+        job = job_store.get(job_id)
+        if not job:
+            return
+        new_state = run_localization(job["data"])
+        job_store.update(job_id, {"data": new_state, "status": "completed"})
+        logger.info("Localization completed for job %s", job_id)
+    except Exception as e:
+        logger.error("Localization error for job %s: %s", job_id, traceback.format_exc())
+        job_store.update(job_id, {"status": "error", "error": str(e)})
+
+
+# ── API endpoints ─────────────────────────────────────────────────────────────
+
 @app.post("/api/generate")
-def generate(req: GenerateRequest):
+@limiter.limit("10/minute")           # Fix #3: rate limit
+async def generate(request: Request, req: GenerateRequest, bg: BackgroundTasks):
     job_id = str(uuid.uuid4())
-    jobs[job_id] = {
-        "job_id": job_id,
-        "status": "starting",
+    job_store.create(job_id, {
+        "status":       "starting",
         "current_node": "starting",
-        "data": None,
-        "error": None,
-        "start_time": time.time(),
-    }
-    threading.Thread(target=run_pipeline, args=(job_id, req), daemon=True).start()
+        "error":        None,
+    })
+    bg.add_task(run_pipeline, job_id, req)   # Fix #7: BackgroundTasks
+    logger.info("Job %s created", job_id)
     return {"job_id": job_id, "status": "started"}
 
 
 @app.get("/api/status/{job_id}")
-def get_status(job_id: str):
-    if job_id not in jobs:
+async def get_status(job_id: str):
+    job = job_store.get(job_id)
+    if job is None:
         raise HTTPException(404, "Job not found")
-    job = jobs[job_id]
-    d = job.get("data") or {}
+
+    d       = job.get("data") or {}
     elapsed = time.time() - job["start_time"]
+
     return {
-        "job_id": job_id,
-        "status": job["status"],
-        "current_node": job["current_node"],
-        "elapsed": round(elapsed, 1),
-        "error": job.get("error"),
-        "raw_blog": d.get("raw_blog", ""),
-        "parsed_blog": d.get("parsed_blog", {}),
-        "quality_score": d.get("quality_score", 0),
-        "quality_issues": d.get("quality_issues", ""),
-        "sources": d.get("sources", []),
-        "rag_verdict": d.get("rag_verdict", ""),
-        "rag_summary": d.get("rag_summary", ""),
-        "rag_suggestions": d.get("rag_suggestions", []),
-        "rag_score": d.get("rag_score", 0),
-        "review_verdict": d.get("review_verdict", ""),
-        "review_score": d.get("review_score", 0),
-        "review_checks": d.get("review_checks", {}),
-        "review_fixes": d.get("review_fixes", []),
-        "editor_note": d.get("editor_note", ""),
-        "images": {k: {"base64": v.get("base64",""), "label": v.get("label",""), "width": v.get("width",0), "height": v.get("height",0)} for k, v in (d.get("images") or {}).items()},
-        "social_posts": {k: {"caption": v.get("caption", v.get("post_text", "")), "post_text": v.get("post_text", v.get("caption", "")), "image_b64": v.get("image_b64", ""), "size": v.get("size",""), "platform": v.get("platform", k)} for k, v in (d.get("social_posts") or {}).items()},
-        "localized_content": d.get("localized_content", {}), # FIXED: Expose translations to UI
-        "target_languages": d.get("target_languages", []),
-        "iteration": d.get("iteration", 0),
-        "approved": d.get("approved", False),
-        "mode": d.get("mode", ""),
-        "topic": d.get("topic", ""),
+        "job_id":           job_id,
+        "status":           job["status"],
+        "current_node":     job["current_node"],
+        "elapsed":          round(elapsed, 1),
+        "error":            job.get("error"),
+        "raw_blog":         d.get("raw_blog", ""),
+        "parsed_blog":      d.get("parsed_blog", {}),
+        "quality_score":    d.get("quality_score", 0),
+        "quality_issues":   d.get("quality_issues", ""),
+        "sources":          d.get("sources", []),
+        "rag_verdict":      d.get("rag_verdict", ""),
+        "rag_summary":      d.get("rag_summary", ""),
+        "rag_suggestions":  d.get("rag_suggestions", []),
+        "rag_score":        d.get("rag_score", 0),
+        "review_verdict":   d.get("review_verdict", ""),
+        "review_score":     d.get("review_score", 0),
+        "review_checks":    d.get("review_checks", {}),
+        "review_fixes":     d.get("review_fixes", []),
+        "editor_note":      d.get("editor_note", ""),
+        "images": {
+            k: {
+                "base64": v.get("base64", ""),
+                "label":  v.get("label", ""),
+                "width":  v.get("width", 0),
+                "height": v.get("height", 0),
+            }
+            for k, v in (d.get("images") or {}).items()
+        },
+        "social_posts": {
+            k: {
+                "caption":    v.get("caption", v.get("post_text", "")),
+                "post_text":  v.get("post_text", v.get("caption", "")),
+                "image_b64":  v.get("image_b64", ""),
+                "size":       v.get("size", ""),
+                "platform":   v.get("platform", k),
+            }
+            for k, v in (d.get("social_posts") or {}).items()
+        },
+        "localized_content": d.get("localized_content", {}),
+        "target_languages":  d.get("target_languages", []),
+        "iteration":         d.get("iteration", 0),
+        "approved":          d.get("approved", False),
+        "mode":              d.get("mode", ""),
+        "topic":             d.get("topic", ""),
     }
 
 
 @app.post("/api/feedback")
-def post_feedback(req: FeedbackRequest):
-    if req.job_id not in jobs:
+async def post_feedback(req: FeedbackRequest, bg: BackgroundTasks):
+    job = job_store.get(req.job_id)
+    if job is None:
         raise HTTPException(404, "Job not found")
-    
-    jobs[req.job_id]["pending_action"] = req.action
-    jobs[req.job_id]["pending_feedback"] = req.feedback
-    
+
+    data_patch = {
+        "pending_action":   req.action,
+        "pending_feedback": req.feedback,
+    }
+
     if req.action == "approve":
-        # FIXED: Tell the C++ engine to run manually now that it is approved!
-        if jobs[req.job_id].get("data"):
-            jobs[req.job_id]["data"]["approved"] = True
-            if req.target_languages:
-                jobs[req.job_id]["data"]["target_languages"] = req.target_languages
-                
-        jobs[req.job_id]["status"] = "running"
-        jobs[req.job_id]["current_node"] = "localize"
-        
-        def run_localization_process():
-            try:
-                from graph.blog_graph import run_localization
-                new_state = run_localization(jobs[req.job_id]["data"])
-                jobs[req.job_id]["data"] = new_state
-                jobs[req.job_id]["status"] = "completed"
-            except Exception as e:
-                traceback.print_exc()
-                jobs[req.job_id]["status"] = "error"
-                jobs[req.job_id]["error"] = str(e)
-                
-        threading.Thread(target=run_localization_process, daemon=True).start()
+        data_patch["approved"] = True
+        if req.target_languages:
+            data_patch["target_languages"] = req.target_languages
+
+        job_store.update(req.job_id, {
+            "status":       "running",
+            "current_node": "localize",
+            "data":         data_patch,
+        })
+        bg.add_task(run_localization_task, req.job_id)   # Fix #7
     else:
-        threading.Thread(target=resume_pipeline, args=(req.job_id,), daemon=True).start()
-        
+        job_store.update(req.job_id, {"data": data_patch})
+        bg.add_task(resume_pipeline, req.job_id)          # Fix #7
+
     return {"status": "ok", "action": req.action}
 
 
 @app.get("/api/health")
-def health():
-    return {"status": "ok", "version": "2.0.0"}
+async def health():
+    return {"status": "ok", "version": "2.1.0"}
+
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/app")
+
 
 @app.post("/api/schedule")
-def schedule_post_endpoint(req: ScheduleRequest):
-    from fastapi import HTTPException
-    if req.job_id not in jobs:
+async def schedule_post_endpoint(req: ScheduleRequest):
+    job = job_store.get(req.job_id)
+    if job is None:
         raise HTTPException(404, "Job not found")
-        
-    job = jobs[req.job_id]
-    d = job.get("data") or {}
-    
-    from agents.scheduler import SocialScheduler
-    scheduler = SocialScheduler()
-    
-    result = scheduler.schedule_post(
-        job_id=req.job_id,
-        platform=req.platform,
-        post_time=req.time,
-        note=req.note,
-        blog_data=d.get("parsed_blog") or {"topic": d.get("topic", "")},
-        social_data=d.get("social_posts", {})
+
+    d       = job.get("data") or {}
+    result  = SocialScheduler().schedule_post(
+        job_id    = req.job_id,
+        platform  = req.platform,
+        post_time = req.time,
+        note      = req.note,
+        blog_data = d.get("parsed_blog") or {"topic": d.get("topic", "")},
+        social_data = d.get("social_posts", {}),
     )
-    
     return result
 
-@app.get("/api/queue")
-def get_queue():
-    from agents.scheduler import get_scheduled_posts
-    return {"queue": get_scheduled_posts()}
 
+@app.get("/api/queue")
+async def get_queue():
+    return {"queue": get_scheduled_posts()}
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("api_server:app", host="0.0.0.0", port=8000, reload=True)

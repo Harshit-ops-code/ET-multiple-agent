@@ -10,6 +10,7 @@ from prompts.social_media_prompt import (
     KEY_FACT_EXTRACTOR,
 )
 from config import GROQ_API_KEY, GROQ_MODEL, BRAND_NAME, OUTPUT_DIR
+from agents.llm_fallback import run_llm_with_fallback
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import os, io, base64, textwrap, re
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -169,15 +170,21 @@ class SocialMediaAgent:
             if k not in filtered:
                 filtered[k] = ""
         prompt = ChatPromptTemplate.from_messages([("human", template)])
-        chain  = prompt | self.llm | StrOutputParser()
-        return chain.invoke(filtered).strip()
+        return run_llm_with_fallback(
+            prompt_template=prompt,
+            inputs=filtered,
+            groq_llm=self.llm
+        ).strip()
 
     def _extract_key_fact(self, content: str) -> str:
         if not content:
             return ""
         prompt = ChatPromptTemplate.from_messages([("human", KEY_FACT_EXTRACTOR)])
-        chain  = prompt | self.llm | StrOutputParser()
-        return chain.invoke({"content": content[:1500]}).strip()
+        return run_llm_with_fallback(
+            prompt_template=prompt,
+            inputs={"content": content[:1500]},
+            groq_llm=self.llm
+        ).strip()
 
     def _resolve_background(
         self,

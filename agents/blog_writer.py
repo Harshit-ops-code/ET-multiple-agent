@@ -1,12 +1,13 @@
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from config import GROQ_API_KEY, GROQ_MODEL, OUTPUT_DIR
+from config import GROQ_API_KEY, GROQ_MODEL, OUTPUT_DIR, BRAND_NAME
 from agents.web_search import WebSearchAgent 
 from prompts.blog_writer_prompt import (
-    BLOG_WRITER_SYSTEM_PROMPT,
-    BLOG_WRITER_HUMAN_TEMPLATE,
+    SYSTEM_PROMPT_NEWS,
+    HUMAN_TEMPLATE_NEWS,
 )
+from agents.llm_fallback import run_llm_with_fallback
 import os
 import re
 from datetime import datetime
@@ -16,21 +17,34 @@ class BlogWriterAgent:
     """
     Phase 1 Agent: Generates a full structured blog post given a topic.
     Uses Groq (LLaMA3-70B) via LangChain for maximum output quality.
+    Falls back to mock generation if network is restricted.
     """
 
     def __init__(self):
-        self.llm = ChatGroq(
-            api_key=GROQ_API_KEY,
-            model_name=GROQ_MODEL,
-            temperature=0.7,        # creative but controlled
-            max_tokens=4096,
-        )
+        # Lazy initialization - don't create LLM instance until needed
+        self.llm = None
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", BLOG_WRITER_SYSTEM_PROMPT),
-            ("human", BLOG_WRITER_HUMAN_TEMPLATE),
+            ("system", SYSTEM_PROMPT_NEWS),
+            ("human", HUMAN_TEMPLATE_NEWS),
         ])
-        self.chain = self.prompt | self.llm | StrOutputParser()
+        self.chain = None
         os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    def _initialize_llm(self):
+        """Lazy initialize LLM to avoid network access during __init__"""
+        if self.llm is None:
+            try:
+                self.llm = ChatGroq(
+                    api_key=GROQ_API_KEY,
+                    model_name=GROQ_MODEL,
+                    temperature=0.7,        # creative but controlled
+                    max_tokens=4096,
+                )
+                self.chain = self.prompt | self.llm | StrOutputParser()
+            except Exception as e:
+                print(f"[BlogWriterAgent] Failed to initialize ChatGroq: {e}")
+                # Will use fallback in run_llm_with_fallback
+                self.llm = None
 
     def generate(
         self,
@@ -40,6 +54,9 @@ class BlogWriterAgent:
         use_web_search: bool = True,           # toggle search on/off
     ) -> dict:
         print(f"\n[BlogWriterAgent] Generating blog on: '{topic}'")
+        
+        # Lazy initialize LLM (avoids network access during __init__)
+        self._initialize_llm()
 
         search_results = {"context": "", "sources": [], "tavily_answer": ""}
 
@@ -47,16 +64,23 @@ class BlogWriterAgent:
             searcher = WebSearchAgent()
             search_results = searcher.search(topic)
 
-        raw_output = self.chain.invoke({
-            "topic":    topic,
-            "audience": audience,
-            "length":   length,
-            "context":  search_results["context"],
-        })
+        raw_output = run_llm_with_fallback(
+            prompt_template=self.prompt,
+            inputs={
+                "topic":    topic,
+                "audience": audience,
+                "length":   length,
+                "context":  search_results["context"],
+                "brand_name": BRAND_NAME,
+            },
+            groq_llm=self.llm,
+            temperature=0.7,
+            max_tokens=4096
+        )
 
         parsed = self._parse_output(raw_output)
         parsed["sources"] = search_results["sources"]       # attach sources
-        parsed["tavily_answer"] = search_results["tavily_answer"]
+        parsed["tavily_answer"] = search_results.get("tavily_answer", "")
         self._save_blog(parsed, topic)
 
         print(f"[BlogWriterAgent] Done. Title: {parsed.get('title', 'Untitled')}")

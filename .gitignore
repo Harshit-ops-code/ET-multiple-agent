@@ -1,12 +1,91 @@
+# ─────────────────────────────────────────────
+#  ET-AI Content Engine — .gitignore
+# ─────────────────────────────────────────────
+
+# ── Secrets & environment ─────────────────────
 .env
-.venv/
+env.txt
+*.env
+.env.*
+!.env.example        # keep the example file
+
+# ── Database ──────────────────────────────────
+jobs.db
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Python ────────────────────────────────────
 __pycache__/
 *.py[cod]
-*.log
-backend.err
-backend.log
-frontend.err
-frontend.log
-outputs/
+*$py.class
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.pytest-tmp/
+.pip-cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# ── Virtual environments ──────────────────────
+venv/
+.venv/
+.codex-venv/
+env/
+ENV/
+.env/
+
+# ── RAG / Vector DB ───────────────────────────
 rag/chroma_db/
-engine/*.exe
+*.chroma
+
+# ── Generated outputs ─────────────────────────
+outputs/
+*.blog.txt
+*.blog.md
+
+# ── Images ────────────────────────────────────
+outputs/images/
+*.png
+*.jpg
+*.jpeg
+!assets/**          # keep any intentional assets
+
+# ── OS files ──────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDEs ──────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ── Windows scripts (replaced by Dockerfile) ──
+*.exe
+*.bat
+*.ps1
+!scripts/*.ps1
+
+# ── Node (if frontend tooling added later) ────
+node_modules/
+npm-debug.log*
+yarn-error.log*

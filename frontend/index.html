@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Lexis AI · Content Intelligence Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles/base.css?v=102"/>
+<link rel="stylesheet" href="styles/header.css?v=102"/>
+<link rel="stylesheet" href="styles/sidebar.css?v=102"/>
+<link rel="stylesheet" href="styles/loading.css?v=102"/>
+<link rel="stylesheet" href="styles/results.css?v=102"/>
+<link rel="stylesheet" href="styles/footer.css?v=102"/>
+<link rel="stylesheet" href="styles/skeleton.css?v=102">
+<link rel="stylesheet" href="styles/hero.css?v=102"/>
+<link rel="stylesheet" href="styles/mobile.css?v=102">  <!-- always last -->
+</head>
+<body>
+<section class="hero-page" id="hero-page">
+  <canvas id="hero-stars"></canvas>
+  
+  <header class="hero-header">
+    <div class="logo">
+      <div class="logo-mark">LX</div>
+      <div class="logo-name">Lexis<span>.ai</span></div>
+    </div>
+    <div class="hero-header-right">
+      <button class="hero-header-btn" id="heroLoginBtn" onclick="openLoginModal()">Sign In</button>
+      <div class="user-avatar hidden" id="heroUserAvatar" onclick="handleAvatarClick()">
+        <div class="avatar-circle" id="heroAvatarInitials">HA</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero-hero-section">
+    <div class="hero-container">
+      <div class="hero-left-column">
+        <span class="hero-badge">Beta Now Live!</span>
+        <h1 class="hero-heading">Your Multi-Agent AI Content Team, Working 24/7</h1>
+        <p class="hero-subheading">
+          Configure briefs, run multi-agent pipelines (Write → Validate → RAG → Review → Images → Social), and multiply content quality by 10x with AI Agents.
+        </p>
+        <button class="hero-btn" onclick="enterApp()">
+          Launch Lexis AI
+          <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+      </div>
+      <div class="hero-right-column">
+        <div class="avatar-3d-wrapper">
+          <canvas id="hero-3d-avatar"></canvas>
+          <div class="avatar-3d-glow"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-scroll-indicator">
+      <div class="mouse">
+        <div class="wheel"></div>
+      </div>
+      <span>Scroll down to discover features</span>
+    </div>
+  </div>
+
+  <div class="hero-features-section">
+    <div class="features-header">
+      <h2 class="features-title">Lexis AI Content Intelligence Engine</h2>
+      <p class="features-subtitle">The multi-agent pipeline writes, fact-checks, reviews, and publishes your content with corporate compliance guardrails.</p>
+    </div>
+    
+    <div class="hero-features-grid">
+      <div class="hero-feature-card">
+        <div class="feature-card-icon">⚡</div>
+        <div class="feature-card-title">LangGraph 6-Node Pipeline</div>
+        <div class="feature-card-desc">Write → Validate → RAG → Review → Images → Social media posts in a structured passing workflow.</div>
+      </div>
+      <div class="hero-feature-card">
+        <div class="feature-card-icon">🔍</div>
+        <div class="feature-card-title">RAG Fact-Checking</div>
+        <div class="feature-card-desc">Factual validation against retrieved web search contexts (Tavily search API) and Chroma vector store data.</div>
+      </div>
+      <div class="hero-feature-card">
+        <div class="feature-card-icon">🔒</div>
+        <div class="feature-card-title">5-Layer Compliance Review</div>
+        <div class="feature-card-desc">Thorough automated audits targeting Brand Voice, Legal names, Tone consistency, Policy, and Accuracy.</div>
+      </div>
+      <div class="hero-feature-card">
+        <div class="feature-card-icon">🖼</div>
+        <div class="feature-card-title">AI Image Generation</div>
+        <div class="feature-card-desc">Stability AI graphics generated in three aspect ratio crops (Blog Hero, Instagram Square, LinkedIn landscape).</div>
+      </div>
+      <div class="hero-feature-card">
+        <div class="feature-card-icon">📱</div>
+        <div class="feature-card-title">Automated Social Previews</div>
+        <div class="feature-card-desc">Pre-formatted templates rendering exact LinkedIn feed posts and Instagram cards with user interactions.</div>
+      </div>
+      <div class="hero-feature-card">
+        <div class="feature-card-icon">👤</div>
+        <div class="feature-card-title">Human-in-the-Loop approval gate</div>
+        <div class="feature-card-desc">Review engine score cards and request manual refinement loops directly before publishing.</div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb3 orb"></div>
+<div class="app">
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">LX</div>
+    <div class="logo-name">Lexis<span>.ai</span></div>
+  </div>
+  <div class="header-center">
+    <div class="pipeline-crumb">
+      <span class="crumb" id="crumb-write">✍️ Write</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-validate">🔍 Validate</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-rag">🧠 RAG Check</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-review">🔒 Review</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-images">🖼 Images</span>
+      <span class="crumb-sep">›</span>
+      <span class="crumb" id="crumb-social">📱 Social</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn-small home-btn" onclick="showHeroPage()">🏠 Home</button>
+    <button class="btn-small success" onclick="resetUI()">🔄 New Project</button>
+    <button class="btn-small info" id="headerLoginBtn" onclick="openLoginModal()" style="font-weight:700">🔑 Sign In</button>
+    <div class="user-avatar hidden" id="headerUserAvatar" onclick="handleAvatarClick()">
+      <div class="avatar-circle" id="headerAvatarInitials">HA</div>
+    </div>
+    <div class="status-pill"><div class="status-dot"></div><span id="headerStatus">READY</span></div>
+  </div>
+</header>
+
+<div class="main">
+
+  <aside class="sidebar">
+    <button class="sidebar-toggle" style="display:none">
+      <span>⚙️ Configure Content Brief</span>
+      <span class="arrow">▼</span>
+    </button>
+    <div class="sidebar-section">
+      <div class="section-label">Blog Mode</div>
+      <div class="mode-switch">
+        <button class="mode-btn news active" id="modeNews" onclick="setMode('news')">📰 News Blog</button>
+        <button class="mode-btn product" id="modeProduct" onclick="setMode('product')">🚀 Product Launch</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Content Brief</div>
+      <div class="field-group">
+        <label class="field-label" id="topic-label">Topic / Idea *</label>
+        <textarea id="topic" rows="2" placeholder="e.g. Why AI is reshaping enterprise content marketing"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Target Audience</label>
+        <input id="audience" type="text" placeholder="e.g. startup founders, B2B marketers"/>
+      </div>
+      <div id="news-ctx">
+        <div class="field-group">
+          <label class="field-label">Additional Context</label>
+          <textarea id="context" rows="2" placeholder="Specific angle, tone, or focus..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section hidden" id="product-section">
+      <div class="section-label">Product Details</div>
+      <div class="field-group">
+        <label class="field-label">Product Description *</label>
+        <textarea id="product_details" rows="3" placeholder="What does your product do? What problem does it solve?"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Key Features</label>
+        <textarea id="key_features" rows="2" placeholder="e.g. Real-time sync, AI-powered, No-code setup"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Unique Value Proposition</label>
+        <input id="uvp" type="text" placeholder="e.g. 10x faster than manual creation"/>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Options</div>
+      <div class="field-group">
+        <label class="field-label">Word Count</label>
+        <div class="range-row">
+          <input type="range" id="length" min="300" max="2000" step="100" value="1000" oninput="document.getElementById('length-val').textContent=this.value+' words'"/>
+          <span class="range-val" id="length-val">1000 words</span>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Tone</label>
+        <select id="tone">
+          <option value="professional">Professional</option>
+          <option value="conversational">Conversational</option>
+          <option value="authoritative">Authoritative</option>
+          <option value="playful">Playful</option>
+          <option value="educational">Educational</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Image Generation</div>
+      <div class="toggle-row" style="margin-bottom:10px">
+        <span class="toggle-label">Generate AI images</span>
+        <label class="toggle"><input type="checkbox" id="gen-images" checked/><span class="toggle-slider"></span></label>
+      </div>
+      <div id="image-options">
+        <div class="field-group">
+          <label class="field-label">Formats</label>
+          <div class="check-grid">
+            <label class="check-item checked" data-fmt="blog"><input type="checkbox" checked>🖼 Blog Hero</label>
+            <label class="check-item checked" data-fmt="instagram"><input type="checkbox" checked>📸 Instagram</label>
+            <label class="check-item checked" data-fmt="linkedin"><input type="checkbox" checked>💼 LinkedIn</label>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Or upload your image</label>
+          <div class="upload-area" id="upload-area" onclick="document.getElementById('img-upload').click()">
+            📎 Click to upload (PNG/JPG)
+          </div>
+          <input type="file" id="img-upload" accept="image/*" style="display:none" onchange="handleImageUpload(this)"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">Social Media</div>
+      <div class="field-group">
+        <label class="field-label">Generate Posts For</label>
+        <div class="check-grid">
+          <label class="check-item checked" data-platform="instagram"><input type="checkbox" checked>📸 Instagram</label>
+          <label class="check-item checked" data-platform="linkedin"><input type="checkbox" checked>💼 LinkedIn</label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-section">
+      <div class="section-label">Localization (C++ Engine)</div>
+      <div class="field-group">
+        <div class="check-grid" id="lang-grid">
+          <label class="check-item" data-lang="Spanish"><input type="checkbox">🇪🇸 Spanish</label>
+          <label class="check-item" data-lang="German"><input type="checkbox">🇩🇪 German</label>
+          <label class="check-item" data-lang="Japanese"><input type="checkbox">🇯🇵 Japanese</label>
+          <label class="check-item" data-lang="French"><input type="checkbox">🇫🇷 French</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="border-bottom:none;">
+      <button class="btn-generate" id="generateBtn" onclick="generate()">
+        <div class="btn-spinner" id="btn-spinner"></div>
+        <span id="btn-text">⚡ Generate Content</span>
+      </button>
+    </div>
+
+  </aside>
+
+  <div class="output" id="outputPanel">
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">✨</div>
+      <h3>Lexis AI Content Intelligence Engine</h3>
+      <p>Configure your content brief on the left and hit Generate. The multi-agent pipeline will write, fact-check, review, and publish your content.</p>
+      <div style="font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px; width: 100%; text-align: center;">
+        💡 You can configure Mode, target audience, images generation, social media publishing, and translation languages inside the brief settings.
+      </div>
+    </div>
+
+    <div class="loading-state" id="loadingState">
+      <div class="loading-shell">
+        <div class="loading-panel loading-hero">
+          <div class="loading-kicker">
+            <span class="loading-kicker-dot"></span>
+            Multi-Agent Pipeline Live
+          </div>
+          <div class="loading-title">Your content team is building something worth waiting for.</div>
+          <div class="loading-copy">Instead of a dead spinner, this panel shows where the pipeline is spending time, what stage is active, and what output is being shaped right now.</div>
+
+          <div class="loading-3d-viewport">
+            <canvas id="loading3DCanvas"></canvas>
+            <div class="viewport-hud">
+              <span class="hud-tag">LX-CORE MATRIX: ACTIVE</span>
+              <span class="hud-coords" id="hudCoords">ROT: [0.00, 0.00]</span>
+            </div>
+          </div>
+
+          <div class="loading-meter">
+            <div class="loading-ring"></div>
+            <div class="loading-progress">
+              <div class="loading-progress-top">
+                <div class="loading-step" id="loadingStep">Initializing agents</div>
+                <div class="loading-percent" id="loadingPercent">06%</div>
+              </div>
+              <div class="loading-progress-track">
+                <div class="loading-progress-fill" id="loadingProgressFill"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="loading-stage-card">
+            <div>
+              <div class="loading-stage-title" id="loadingStageTitle">Warming up the agent crew</div>
+              <div class="loading-stage-meta" id="loadingStageMeta">Preparing prompts, model connections, and state before the first writing pass.</div>
+            </div>
+            <div class="loading-stage-time">
+              <div class="loading-stage-caption">Elapsed</div>
+              <div class="loading-stage-elapsed" id="loadingElapsed">0s</div>
+            </div>
+          </div>
+
+          <div class="loading-nodes">
+            <div class="loading-node pending" id="ln-write">Write</div>
+            <div class="loading-node pending" id="ln-validate">Validate</div>
+            <div class="loading-node pending" id="ln-rag">RAG</div>
+            <div class="loading-node pending" id="ln-review">Review</div>
+            <div class="loading-node pending" id="ln-images">Images</div>
+            <div class="loading-node pending" id="ln-social">Social</div>
+            <div class="loading-node pending" id="ln-localize">Translate</div>
+          </div>
+        </div>
+
+        <div class="loading-panel loading-side">
+          <div class="loading-side-card">
+            <div class="loading-side-title">What The System Is Doing</div>
+            <div class="loading-insight" id="loadingInsight">Coordinating writers, validators, and reviewers into one passing workflow.</div>
+            <div class="loading-subtext" id="loadingInsightSubtext">The experience should feel alive while your content is being built, not like a frozen screen.</div>
+          </div>
+
+          <div class="loading-side-card">
+            <div class="loading-side-title">Live Timeline</div>
+            <div class="loading-log" id="loadingLog"></div>
+          </div>
+
+          <div class="loading-side-card">
+            <div class="loading-side-title">Session Telemetry</div>
+            <div class="loading-stats">
+              <div class="loading-stat">
+                <div class="loading-stat-label">Mode</div>
+                <div class="loading-stat-value" id="loadingModeStat">NEWS</div>
+              </div>
+              <div class="loading-stat">
+                <div class="loading-stat-label">Stages</div>
+                <div class="loading-stat-value" id="loadingStageStat">0 / 7</div>
+              </div>
+              <div class="loading-stat">
+                <div class="loading-stat-label">Languages</div>
+                <div class="loading-stat-value" id="loadingLangStat">0</div>
+              </div>
+              <div class="loading-stat">
+                <div class="loading-stat-label">Status</div>
+                <div class="loading-stat-value" id="loadingStatusStat">BOOT</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="result-wrap" id="resultWrap">
+
+      <div class="score-bar" id="scoreBar">
+        <div class="score-item">
+          <div class="score-name">Quality Score</div>
+          <div class="score-val" id="scoreQuality">—</div>
+        </div>
+        <div class="score-divider"></div>
+        <div class="score-item">
+          <div class="score-name">Review Score</div>
+          <div class="score-val" id="scoreReview">—</div>
+        </div>
+        <div class="score-divider"></div>
+        <div class="score-item">
+          <div class="score-name">RAG Score</div>
+          <div class="score-val" id="scoreRag">—</div>
+        </div>
+        <div class="score-divider"></div>
+        <div class="score-item">
+          <div class="score-name">Iteration</div>
+          <div class="score-val" id="scoreIter" style="color:var(--muted2)">—</div>
+        </div>
+        <div class="score-bar-right">
+          <div class="verdict-pill" id="verdictPill">—</div>
+        </div>
+      </div>
+
+      <div class="tabs-row">
+        <button class="tab-btn active" onclick="switchTab('blog')">📝 Blog Post</button>
+        <button class="tab-btn" onclick="switchTab('review')">🔒 Review Report</button>
+        <button class="tab-btn" onclick="switchTab('social')">📱 Social Posts</button>
+        <button class="tab-btn" onclick="switchTab('images')">🖼 Images</button>
+        <button class="tab-btn" onclick="switchTab('translations')">🌍 Translations</button>
+        <button class="tab-btn" onclick="switchTab('schedule')">📅 Schedule</button>
+      </div>
+
+      <div class="approved-banner" id="approvedBanner">✅ Content approved and ready to publish!</div>
+
+      <div class="tab-content active" id="tab-blog">
+        <div class="blog-area fade-in" id="blogArea">
+          <div class="blog-meta-strip" id="metaStrip"></div>
+          <div class="blog-title" id="blogTitle"></div>
+          <div class="blog-desc" id="blogDesc"></div>
+          <div class="blog-content" id="blogContent"></div>
+          <div class="kw-row" id="kwRow"></div>
+          <div class="cta-box" id="ctaBox"><strong>Call to Action</strong><span id="ctaText"></span></div>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button class="btn-small accent" onclick="copyBlog(this)">⎘ Copy Markdown</button>
+            <button class="btn-small" onclick="downloadBlog()">⬇ Download .md</button>
+            <button class="btn-small" onclick="copyBlogHtml(this)">⎘ Copy HTML</button>
+          </div>
+        </div>
+        <div class="sources-panel" id="sourcesPanel" style="display:none">
+          <div class="sources-title">Sources Used</div>
+          <div class="sources-grid" id="sourcesGrid"></div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-review">
+        <div class="review-area fade-in">
+          <div class="review-grid" id="reviewGrid"></div>
+          <div class="rag-section" id="ragSection">
+            <div class="rag-header">
+              <div class="rag-title">🧠 RAG Fact-Check</div>
+              <div class="rag-verdict pass" id="ragVerdict">PASS</div>
+            </div>
+            <div class="rag-summary" id="ragSummary"></div>
+            <div class="rag-suggestions" id="ragSuggestions"></div>
+          </div>
+          <div class="fixes-section" id="fixesSection" style="display:none">
+            <div class="fixes-title">Required Fixes</div>
+            <div id="fixesList"></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Editor Note</label>
+            <div style="font-size:12px;color:var(--muted2);padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;line-height:1.6;" id="editorNote"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-social">
+        <div class="social-area fade-in" id="socialArea">
+          <div class="social-platform-tabs">
+            <button class="soc-tab active instagram" onclick="showSocial('instagram')">📸 Instagram</button>
+            <button class="soc-tab linkedin" onclick="showSocial('linkedin')">💼 LinkedIn</button>
+          </div>
+          <div id="social-instagram">
+            <div class="social-post-card">
+              <div class="social-card-header">
+                <div class="instagram-avatar">
+                  <div class="instagram-avatar-inner">LX</div>
+                </div>
+                <div class="instagram-meta">
+                  <span class="instagram-user">lexis.ai</span>
+                  <span class="instagram-loc">Lexis Workspace</span>
+                </div>
+                <span class="social-size" id="ig-size" style="margin-left: auto;">1080×1080</span>
+              </div>
+              <div class="social-image-wrap"><img id="ig-image" src="" alt="Instagram"/></div>
+              <div class="instagram-actions-bar">
+                <span>❤️</span> <span>💬</span> <span>✈️</span> <span style="margin-left:auto;">🔖</span>
+              </div>
+              <div class="instagram-likes">Liked by you and others</div>
+              <div class="social-caption">
+                <div class="social-caption-label">Caption</div>
+                <div class="social-caption-text" id="ig-caption"></div>
+                <div class="caption-actions">
+                  <button class="btn-small accent" onclick="copyCaption('ig', this)">⎘ Copy Caption</button>
+                  <button class="btn-small success" onclick="downloadImage('ig')">⬇ Download Image</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="social-linkedin" style="display:none">
+            <div class="social-post-card">
+              <div class="social-card-header">
+                <div class="linkedin-avatar">LX</div>
+                <div class="linkedin-meta">
+                  <span class="linkedin-name">Lexis AI <span class="degree">· 1st</span></span>
+                  <span class="linkedin-headline">Autonomous Multi-Agent Content Engine</span>
+                  <span class="linkedin-time">Just now · 🌎</span>
+                </div>
+                <span class="linkedin-follow">+ Follow</span>
+              </div>
+              <div class="social-caption">
+                <div class="social-caption-text" id="li-caption"></div>
+              </div>
+              <div class="social-image-wrap"><img id="li-image" src="" alt="LinkedIn"/></div>
+              <div class="linkedin-actions-bar">
+                <div class="linkedin-act-btn">👍 <span>Like</span></div>
+                <div class="linkedin-act-btn">💬 <span>Comment</span></div>
+                <div class="linkedin-act-btn">🔁 <span>Repost</span></div>
+                <div class="linkedin-act-btn">✈️ <span>Send</span></div>
+              </div>
+              <div class="social-caption" style="border-top: 1px solid var(--border); padding-top: 10px;">
+                <div class="caption-actions">
+                  <button class="btn-small accent" onclick="copyCaption('li', this)">⎘ Copy Post</button>
+                  <button class="btn-small success" onclick="downloadImage('li')">⬇ Download Image</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-images">
+        <div class="images-area fade-in">
+          <div class="image-grid" id="imageGrid">
+            <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted);font-size:12px;">No images generated yet.</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="tab-content" id="tab-translations">
+        <div class="blog-area fade-in">
+          <div style="margin-bottom:15px; color: var(--gold); font-weight:bold;">⚡ Processed by C++ Parallel Engine</div>
+          <div id="translationsWrap" style="display:flex; flex-direction:column; gap:20px;">
+            <div style="text-align:center;padding:30px;color:var(--muted);font-size:12px;">No translations requested or still processing.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-schedule">
+        <div class="schedule-area fade-in">
+          <div class="schedule-card">
+            <div class="schedule-title">📅 Schedule Post</div>
+            <div class="schedule-row">
+              <div class="field-group" style="margin:0">
+                <label class="field-label">Platform</label>
+                <select id="sched-platform">
+                  <option value="instagram">📸 Instagram</option>
+                  <option value="linkedin">💼 LinkedIn</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+              <div class="field-group" style="margin:0">
+                <label class="field-label">Date & Time</label>
+                <input type="datetime-local" id="sched-time"/>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Note (optional)</label>
+              <input type="text" id="sched-note" placeholder="Campaign name, context..."/>
+            </div>
+            <div class="schedule-actions">
+              <button class="btn-schedule" onclick="schedulePost()">📅 Schedule Post</button>
+              <button class="btn-small" onclick="schedulePost(true)" style="padding:9px 16px;">⚡ Post Now</button>
+            </div>
+          </div>
+          <div>
+            <div class="section-label" style="margin-bottom:8px;">Scheduled Queue</div>
+            <div class="schedule-queue" id="scheduleQueue">
+              <div style="text-align:center;padding:16px;color:var(--muted);font-size:11px;">No scheduled posts yet.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="human-gate" id="humanGate">
+        <div class="gate-header">
+          <div class="gate-icon">👤</div>
+          <div>
+            <div class="gate-title">Human Review Required</div>
+            <div class="gate-sub">Review the output above and approve or request refinements</div>
+          </div>
+        </div>
+        <textarea class="gate-textarea" id="humanFeedback" placeholder="Optional: specific feedback for refinement (tone, focus, missing info...)"></textarea>
+        <div class="gate-actions">
+          <button class="btn-approve" onclick="humanAction('approve')">✅ Approve & Translate</button>
+          <button class="btn-refine" onclick="humanAction('refine')">🔄 Refine</button>
+        </div>
+        <div class="iter-info" id="iterInfo">Iteration 1 of 3</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-dot"></div>
+  <span>LangGraph · Groq Llama-3.3-70B · Stability AI · C++ Engine</span>
+  <span style="margin-left:auto;" id="footerStats">—</span>
+</footer>
+
+</div>
+
+<!-- Glassmorphic Login/Signup Modal -->
+<div class="modal-overlay hidden" id="loginModal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeLoginModal()">×</button>
+    <div class="modal-header">
+      <div class="logo-mark">LX</div>
+      <h3 id="modalTitle">Welcome to Lexis AI</h3>
+      <p id="modalSubtitle">Sign in to your account to generate and schedule articles</p>
+    </div>
+    
+    <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="field-group" style="margin-bottom:0">
+          <label class="field-label" style="margin-bottom:4px">Email Address</label>
+          <input type="email" id="loginEmail" required placeholder="name@company.com" style="padding:10px 12px; font-size:12px;"/>
+        </div>
+        <div class="field-group" style="margin-bottom:0">
+          <label class="field-label" style="margin-bottom:4px">Password</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" style="padding:10px 12px; font-size:12px;"/>
+        </div>
+        
+        <button type="submit" class="modal-submit-btn" id="modalSubmitBtn">Sign In</button>
+      </div>
+    </form>
+    
+    <div class="modal-footer">
+      <span id="modalToggleText">Don't have an account?</span>
+      <a href="#" onclick="toggleModalMode(event)" id="modalToggleLink">Create account</a>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js?v=102"></script>
+<script src="js/state.js?v=102"></script>
+<script src="js/pipeline.js?v=102"></script>
+<script src="js/ui.js?v=102"></script>
+<script src="js/actions.js?v=102"></script>
+<script src="js/shortcuts.js?v=102"></script>
+<script src="js/hero.js?v=102"></script>
+<script>
+  const toggle = document.querySelector('.sidebar-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  if (toggle && sidebar) {
+    toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+  }
+</script>
+</body>
+</html>

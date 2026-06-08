@@ -41,6 +41,7 @@ Violation = immediate disqualification of the output.
    - WEAK: "## The Current Situation"
    - STRONG: "## The Market Moved. Regulators Didn't."
 6. Conclusion: One specific, actionable takeaway. Not a vague "watch this space."
+7. Branding: Natural references to the publishing brand, {brand_name}, should be integrated into the content where appropriate.
 </STYLE_GUIDE>
 
 <CITATION_RULES>
@@ -91,6 +92,7 @@ HUMAN_TEMPLATE_NEWS = """
 Write a heavily-researched news blog post grounded EXCLUSIVELY in the context above.
 Do not introduce facts, stats, or claims not present in the context.
 
+PUBLISHER BRAND: {brand_name}
 TOPIC: {topic}
 TARGET AUDIENCE: {audience}
 TARGET LENGTH: {length} words
@@ -122,6 +124,7 @@ You write for buyers who are smart, skeptical, and short on time.
    - WEAK: "Great for marketers."
    - STRONG: "A content lead at a 20-person SaaS startup can now ship a full campaign brief in 11 minutes, not 3 hours."
 6. Conclusion: End with a single, frictionless CTA. One action. No multiple options.
+7. Branding: The product launch blog and the TARGET_CTA must prominently feature the brand name: {brand_name}.
 </STYLE_GUIDE>
 
 <PROOF_REQUIRED>
@@ -151,7 +154,7 @@ WORD_COUNT: [integer]
 [Full Markdown blog content]
 ---
 SEO_KEYWORDS: [5 comma-separated, buyer-intent keywords]
-TARGET_CTA: [One specific, frictionless action — e.g., "Start your free 14-day trial at [URL]"]
+TARGET_CTA: [One specific, frictionless action — e.g., "Start your free 14-day trial of {brand_name} at [URL]"]
 ---
 </OUTPUT_FORMAT>
 """
@@ -163,6 +166,7 @@ TARGET_CTA: [One specific, frictionless action — e.g., "Start your free 14-day
 HUMAN_TEMPLATE_PRODUCT = """
 <PRODUCT_INFO>
 PRODUCT NAME: {topic}
+BRAND NAME: {brand_name}
 PRODUCT DETAILS: {product_details}
 KEY FEATURES: {key_features}
 UNIQUE VALUE PROPOSITION: {uvp}

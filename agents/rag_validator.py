@@ -7,6 +7,7 @@ from prompts.rag_validator_prompt import (
     RAG_VALIDATOR_SYSTEM_PROMPT,
     RAG_VALIDATOR_HUMAN_TEMPLATE,
 )
+from agents.llm_fallback import run_llm_with_fallback
 import re
 import uuid
 
@@ -43,7 +44,7 @@ class RAGValidator:
         collection_name = f"validation_{uuid.uuid4().hex[:8]}"
 
         try:
-            if sources:
+            if sources or mode == "product":
                 self._embed_sources(collection_name, sources, mode, topic)
 
             source_chunks = self._retrieve_chunks(
@@ -51,10 +52,16 @@ class RAGValidator:
             )
             source_text = self._format_chunks(source_chunks)
 
-            raw_result = self.chain.invoke({
-                "generated_content": blog_content[:3000],
-                "context_chunks": source_text or "No external sources available.",
-            })
+            raw_result = run_llm_with_fallback(
+                prompt_template=self.prompt,
+                inputs={
+                    "generated_content": blog_content[:3000],
+                    "context_chunks": source_text or "No external sources available.",
+                },
+                groq_llm=self.llm,
+                temperature=0.1,
+                max_tokens=2048
+            )
 
             parsed = self._parse_result(raw_result)
             parsed["raw_validator_output"] = raw_result

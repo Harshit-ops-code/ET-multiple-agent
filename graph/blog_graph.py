@@ -3,7 +3,7 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from typing import TypedDict, Literal, Optional
-from config import GROQ_API_KEY, GROQ_MODEL, MAX_REGENERATIONS
+from config import GROQ_API_KEY, GROQ_MODEL, MAX_REGENERATIONS, BRAND_NAME
 from prompts.blog_writer_prompt import (
     SYSTEM_PROMPT_NEWS, SYSTEM_PROMPT_PRODUCT,
     HUMAN_TEMPLATE_NEWS, HUMAN_TEMPLATE_PRODUCT,
@@ -12,6 +12,7 @@ from prompts.blog_writer_prompt import (
 from agents.review_agent import ReviewAgent
 from agents.image_generator import ImageGenerator
 from agents.social_media_agent import SocialMediaAgent
+from agents.llm_fallback import run_llm_with_fallback
 import re
 
 
@@ -87,44 +88,56 @@ def write_blog(state: BlogState) -> BlogState:
                 ("system", SYSTEM_PROMPT_NEWS),
                 ("human",  HUMAN_TEMPLATE_NEWS),
             ])
-            chain = prompt | llm | StrOutputParser()
-            raw = chain.invoke({
-                "topic":    state["topic"],
-                "audience": state["audience"],
-                "length":   state["length"],
-                "context":  state["context"],
-            })
+            raw = run_llm_with_fallback(
+                prompt_template=prompt,
+                inputs={
+                    "topic":    state["topic"],
+                    "audience": state["audience"],
+                    "length":   state["length"],
+                    "context":  state["context"],
+                    "brand_name": BRAND_NAME,
+                },
+                groq_llm=llm
+            )
         else:
             prompt = ChatPromptTemplate.from_messages([
                 ("system", SYSTEM_PROMPT_PRODUCT),
                 ("human",  HUMAN_TEMPLATE_PRODUCT),
             ])
-            chain = prompt | llm | StrOutputParser()
-            raw = chain.invoke({
-                "topic":           state["topic"],
-                "audience":        state["audience"],
-                "length":          state["length"],
-                "product_details": state["product_details"],
-                "key_features":    state["key_features"],
-                "uvp":             state["uvp"],
-            })
+            raw = run_llm_with_fallback(
+                prompt_template=prompt,
+                inputs={
+                    "topic":           state["topic"],
+                    "audience":        state["audience"],
+                    "length":          state["length"],
+                    "product_details": state["product_details"],
+                    "key_features":    state["key_features"],
+                    "uvp":             state["uvp"],
+                    "brand_name":      BRAND_NAME,
+                },
+                groq_llm=llm
+            )
     else:
         # Refinement pass with feedback
         prompt = ChatPromptTemplate.from_messages([
             ("system", REFINEMENT_SYSTEM_PROMPT),
             ("human",  REFINEMENT_HUMAN_TEMPLATE),
         ])
-        chain = prompt | llm | StrOutputParser()
-        raw = chain.invoke({
-            "original_blog":  state["raw_blog"],
-            "feedback":       state["human_feedback"],
-            "quality_issues": state["quality_issues"],
-        })
+        raw = run_llm_with_fallback(
+            prompt_template=prompt,
+            inputs={
+                "original_blog":  state["raw_blog"],
+                "feedback":       state["human_feedback"],
+                "quality_issues": state["quality_issues"],
+            },
+            groq_llm=llm
+        )
 
     return {
         **state,
         "raw_blog":  raw,
         "iteration": state["iteration"] + 1,
+        "human_feedback": "",
     }
 
 
@@ -246,12 +259,30 @@ def review_blog(state: BlogState) -> BlogState:
         result   = reviewer.review(
             content=state["raw_blog"],
             mode=state["mode"],
+            source_context=state.get("context", ""),
         )
 
         auto_feedback = ""
+        
+        # 1. Capture RAG issues if RAG verification failed
+        if state.get("rag_verdict") in ("NEEDS_REVISION", "FAIL"):
+            rag_fixes = []
+            if state.get("rag_suggestions"):
+                rag_fixes.extend(state["rag_suggestions"])
+            else:
+                rag_fixes.append(state.get("rag_summary", "Factual accuracy validation failed."))
+            
+            rag_feedback = "\n".join(f"- {f}" for f in rag_fixes)
+            auto_feedback = f"RAG Validator found factual issues. Fix these:\n{rag_feedback}"
+
+        # 2. Capture compliance linter issues if it failed
         if result["overall_verdict"] in ("NEEDS_FIX", "REJECTED"):
             fixes = "\n".join(f"- {f}" for f in result.get("fixes_required", []))
-            auto_feedback = f"Review agent found issues. Fix these:\n{fixes}"
+            review_feedback = f"Review agent found issues. Fix these:\n{fixes}"
+            if auto_feedback:
+                auto_feedback += f"\n\n{review_feedback}"
+            else:
+                auto_feedback = review_feedback
 
         existing = state.get("quality_score", 100)
         blended  = (existing * 0.5) + (result["overall_score"] * 0.5)
@@ -385,12 +416,14 @@ def should_continue(state: BlogState) -> Literal["refine", "done"]:
         print(f"[LangGraph] Max iterations ({MAX_REGENERATIONS}) reached — finishing")
         return "done"
 
-    if state.get("review_verdict") == "REJECTED":
-        print(f"[LangGraph] Review REJECTED — auto-refining")
+    if state.get("human_feedback"):
+        print(f"[LangGraph] Human feedback detected — refining")
         return "refine"
 
-    if state.get("review_verdict") in ("APPROVED", "NEEDS_FIX"):
-        return "done"
+    if (state.get("review_verdict") in ("REJECTED", "NEEDS_FIX") or 
+            state.get("rag_verdict") in ("NEEDS_REVISION", "FAIL")):
+        print(f"[LangGraph] Review/RAG verdict is {state.get('review_verdict')}/{state.get('rag_verdict')} — auto-refining")
+        return "refine"
 
     return "done"
 

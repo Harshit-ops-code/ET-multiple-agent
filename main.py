@@ -7,6 +7,7 @@ def main():
         topic="Why most startups fail at content marketing",
         audience="startup founders and early-stage marketers",
         length=1000,
+        use_web_search=False,  # Disabled for restricted network environments (WinError 10013)
     )
 
     print("\n" + "="*60)

@@ -3,6 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from prompts.review_prompt import REVIEW_SYSTEM_PROMPT, REVIEW_HUMAN_TEMPLATE
 from config import GROQ_API_KEY, GROQ_MODEL, BRAND_TONE, BRAND_NAME
+from agents.llm_fallback import run_llm_with_fallback
 import re
 
 
@@ -26,16 +27,22 @@ class ReviewAgent:
         ])
         self.chain = self.prompt | self.llm | StrOutputParser()
 
-    def review(self, content: str, mode: str) -> dict:
+    def review(self, content: str, mode: str, source_context: str = "") -> dict:
         print(f"\n[ReviewAgent] Running 5-layer compliance review...")
 
-        raw = self.chain.invoke({
-            "content":    content[:4000],  # cap for token safety
-            "mode":       mode,
-            "brand_tone": BRAND_TONE,
-            "brand_name": BRAND_NAME,
-            "source_context": "",
-        })
+        raw = run_llm_with_fallback(
+            prompt_template=self.prompt,
+            inputs={
+                "content":    content[:4000],  # cap for token safety
+                "mode":       mode,
+                "brand_tone": BRAND_TONE,
+                "brand_name": BRAND_NAME,
+                "source_context": source_context,
+            },
+            groq_llm=self.llm,
+            temperature=0.0,
+            max_tokens=2048
+        )
 
         result = self._parse(raw)
         result["raw_review"] = raw

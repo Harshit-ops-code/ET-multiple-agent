@@ -1,0 +1,16 @@
+.env
+env.txt
+jobs.db
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.pytest-tmp/
+venv/
+.codex-venv/
+.pip-cache/
+.git
+node_modules
+frontend/node_modules
+outputs/
+rag/chroma_db/

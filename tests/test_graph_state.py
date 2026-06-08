@@ -36,6 +36,7 @@ initial_state = {
     "iteration": 0,
 }
 
-from graph.blog_graph import run_localization
-res = run_localization(initial_state)
-print("run_localization direct result:", res.get("localized_content"))
+if __name__ == "__main__":
+    from graph.blog_graph import run_localization
+    res = run_localization(initial_state)
+    print("run_localization direct result:", res.get("localized_content"))
