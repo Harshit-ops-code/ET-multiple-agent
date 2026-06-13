@@ -148,9 +148,28 @@ def _offline_response(prompt_template: ChatPromptTemplate, inputs: dict) -> str:
         "instagram" in rendered_lower or "linkedin" in rendered_lower or "caption" in rendered_lower or "social" in rendered_lower
     ):
         if "instagram" in rendered_lower:
-            return f"Small teams can improve customer support without adding complexity. {topic} helps automate repeated questions, draft faster replies, and keep customer conversations moving. #SmallBusiness #CustomerSupport"
+            return f"""🚀 Level up your content strategy with AI automation!
+
+Here is how {topic} is changing the game:
+• ⚡ Multi-agent collaboration for instant drafts
+• 💡 Automated parallel image crops
+• 🌍 Single-click translation for global reach
+
+Ready to streamline your workflow? Let's build. 🔗 Link in bio!
+
+#ContentMarketing #GenAI #Automation #MarketingStrategy #TechUpdate"""
         elif "linkedin" in rendered_lower:
-            return f"Customer support speed matters, especially for small businesses. {topic} gives teams a practical way to answer common questions, prepare consistent replies, and focus human attention where it matters most. #AI #Automation #Productivity"
+            return f"""💡 The future of content operations is multi-agent.
+
+Most content teams lose hours on manual writing, RAG validation, and compliance reviews. Here is how {topic} solves the bottleneck:
+
+1️⃣ Structured Multi-Agent Pipeline -> Writes, validates, and reviews drafts in seconds.
+2️⃣ Local RAG Validation -> Guarantees factual accuracy against search context.
+3️⃣ C++ Engine -> Launches parallel translations with zero delay.
+
+Are you still doing content review manually? Let's discuss in the comments.
+
+#AI #ContentStrategy #B2BMarketing #Innovation #MachineLearning"""
         return _generate_mock_social(topic)
 
     return _generate_mock_blog(topic, audience)
