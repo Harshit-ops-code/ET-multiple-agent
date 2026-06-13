@@ -5,7 +5,7 @@ from datetime import datetime
 
 import requests
 
-from config import BYTEZ_API_KEY, BYTEZ_IMAGE_MODEL, OUTPUT_DIR, STABILITY_API_KEY
+from config import BYTEZ_API_KEY, BYTEZ_IMAGE_MODEL, OUTPUT_DIR, STABILITY_API_KEY, GEMINI_API_KEY
 
 try:
     from bytez import Bytez
@@ -36,6 +36,7 @@ class ImageGenerator:
         self.stability_api_key = STABILITY_API_KEY
         self.bytez_api_key = BYTEZ_API_KEY
         self.bytez_model_name = BYTEZ_IMAGE_MODEL
+        self.gemini_api_key = GEMINI_API_KEY
         self.img_dir = os.path.join(OUTPUT_DIR, "images")
         os.makedirs(self.img_dir, exist_ok=True)
 
@@ -65,8 +66,8 @@ class ImageGenerator:
             "nsfw, violence, gore, noise, grainy"
         )
 
-        if not self.bytez_client and not self.stability_api_key:
-            print("[ImageGenerator] No Bytez or Stability API key - skipping")
+        if not self.gemini_api_key and not self.bytez_client and not self.stability_api_key:
+            print("[ImageGenerator] No Gemini, Bytez or Stability API key - skipping")
             return {"images": {}, "error": "No image provider configured"}
 
         results = {}
@@ -180,6 +181,12 @@ class ImageGenerator:
         )
 
     def _call_provider(self, prompt: str, negative: str, fmt: str) -> dict | None:
+        if self.gemini_api_key:
+            image = self._call_gemini(prompt, fmt)
+            if image:
+                return image
+            print("[ImageGenerator] Gemini generation failed, trying Bytez fallback")
+
         if self.bytez_client:
             image = self._call_bytez(prompt, negative, fmt)
             if image:
@@ -190,6 +197,70 @@ class ImageGenerator:
             return self._call_stability(prompt, negative, fmt)
 
         return None
+
+    def _call_gemini(self, prompt: str, fmt: str) -> dict | None:
+        spec = self.FORMATS.get(fmt, self.FORMATS["blog"])
+        aspect_ratio = "1:1"
+        if fmt == "blog":
+            aspect_ratio = "16:9"
+        elif fmt == "linkedin":
+            aspect_ratio = "16:9"
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={self.gemini_api_key}"
+        
+        headers = {
+            "Content-Type": "application/json",
+        }
+
+        body = {
+            "instances": [
+                {"prompt": prompt}
+            ],
+            "parameters": {
+                "sampleCount": 1,
+                "aspectRatio": aspect_ratio,
+                "outputMimeType": "image/jpeg"
+            }
+        }
+
+        try:
+            print(f"[ImageGenerator] Requesting Gemini Imagen image for {fmt} with aspect ratio {aspect_ratio}...")
+            resp = requests.post(url, headers=headers, json=body, timeout=90)
+            if resp.status_code != 200:
+                print(f"[ImageGenerator] Gemini Imagen API error {resp.status_code}: {resp.text[:300]}")
+                return None
+
+            data = resp.json()
+            predictions = data.get("predictions", [])
+            if not predictions:
+                print("[ImageGenerator] Gemini Imagen returned no predictions")
+                return None
+
+            prediction = predictions[0]
+            image_b64 = prediction.get("bytesBase64Encoded")
+            if not image_b64 and "image" in prediction:
+                image_b64 = prediction["image"].get("imageBytes")
+
+            if not image_b64:
+                print("[ImageGenerator] Gemini Imagen prediction has no image bytes")
+                return None
+
+            filename = self._save_image(image_b64, fmt)
+            print(f"[ImageGenerator] Saved Gemini image: {filename}")
+            return {
+                "path": filename,
+                "base64": image_b64,
+                "format": fmt,
+                "label": spec["label"],
+                "width": spec["width"],
+                "height": spec["height"],
+                "provider": "gemini",
+                "model": "imagen-3.0-generate-002",
+            }
+
+        except Exception as exc:
+            print(f"[ImageGenerator] Unexpected Gemini Imagen error on {fmt}: {exc}")
+            return None
 
     def _call_bytez(self, prompt: str, negative: str, fmt: str) -> dict | None:
         spec = self.FORMATS.get(fmt, self.FORMATS["blog"])

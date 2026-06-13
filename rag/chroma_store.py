@@ -95,6 +95,41 @@ def _cosine_distance(left: str, right: str) -> float:
     return max(0.0, min(1.0, 1.0 - similarity))
 
 
+def _get_gemini_embedding(text: str) -> list[float] | None:
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if not gemini_key or "mock" in gemini_key.lower():
+        return None
+
+    # Try gemini-embedding-2 first, fallback to text-embedding-004
+    for model_name in ("gemini-embedding-2", "text-embedding-004"):
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:embedContent?key={gemini_key}"
+        headers = {"Content-Type": "application/json"}
+        body = {
+            "model": f"models/{model_name}",
+            "content": {
+                "parts": [{"text": text}]
+            }
+        }
+        try:
+            import requests
+            resp = requests.post(url, headers=headers, json=body, timeout=15)
+            if resp.status_code == 200:
+                return resp.json()["embedding"]["values"]
+        except Exception:
+            pass
+    return None
+
+
+def _vector_cosine_distance(u: list[float], v: list[float]) -> float:
+    dot = sum(a * b for a, b in zip(u, v))
+    norm_u = math.sqrt(sum(a * a for a in u))
+    norm_v = math.sqrt(sum(a * a for a in v))
+    if not norm_u or not norm_v:
+        return 1.0
+    similarity = dot / (norm_u * norm_v)
+    return max(0.0, min(1.0, 1.0 - similarity))
+
+
 if chromadb is not None:
     try:
         client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
@@ -148,9 +183,31 @@ def upsert_documents(collection_name: str, documents: list[dict]):
             return collection_name
 
         collection = _fallback_collections.setdefault(collection_name, [])
+        
+        # Parallel embedding retrieval to minimize API latency
+        from concurrent.futures import ThreadPoolExecutor
+        
+        def embed_doc(doc):
+            emb = _get_gemini_embedding(doc["text"])
+            return doc["id"], emb
+            
+        embeddings_map = {}
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(embed_doc, d) for d in documents]
+            for fut in futures:
+                try:
+                    doc_id, emb = fut.result()
+                    if emb:
+                        embeddings_map[doc_id] = emb
+                except Exception:
+                    pass
+                    
         by_id = {doc["id"]: doc for doc in collection}
         for doc in documents:
-            by_id[doc["id"]] = doc
+            doc_copy = dict(doc)
+            doc_copy["embedding"] = embeddings_map.get(doc["id"])
+            by_id[doc["id"]] = doc_copy
+            
         _fallback_collections[collection_name] = list(by_id.values())
         return collection_name
 
@@ -189,15 +246,22 @@ def query_collection(collection_name: str, query: str, n_results: int = 3):
         else:
             collection = _fallback_collections.get(collection_name, [])
 
+        query_emb = _get_gemini_embedding(query)
+
+        def get_distance(doc):
+            if query_emb and doc.get("embedding"):
+                return _vector_cosine_distance(query_emb, doc["embedding"])
+            return _cosine_distance(query, doc.get("text", ""))
+
         ranked = sorted(
             collection,
-            key=lambda doc: _cosine_distance(query, doc.get("text", "")),
+            key=get_distance,
         )
         return [
             {
                 "text": doc.get("text", ""),
                 "metadata": doc.get("metadata", {}),
-                "distance": _cosine_distance(query, doc.get("text", "")),
+                "distance": get_distance(doc),
             }
             for doc in ranked[:n_results]
         ]
