@@ -39,6 +39,24 @@
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.03);
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03);
+
+  /* Layout rhythm — 8px base, golden-ratio sidebar */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --page-padding: clamp(16px, 2.5vw, 28px);
+  --sidebar-width: clamp(300px, 28vw, 380px);
+  --header-height: 60px;
+  --footer-height: 40px;
+  --content-max: 920px;
+  --grid-gap: var(--space-4);
+  --ratio-sidebar: 0.382;
+  --ratio-main: 0.618;
 }
 
 *, *::before, *::after {
@@ -61,14 +79,16 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle Grid Layout Background */
+/* Subtle dot + line grid background */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: linear-gradient(rgba(0, 0, 0, 0.015) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(0, 0, 0, 0.015) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-image:
+    radial-gradient(circle at center, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px);
+  background-size: 24px 24px, 48px 48px, 48px 48px;
   pointer-events: none;
   z-index: 0;
 }
@@ -109,25 +129,44 @@ body::before {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-rows: 60px 1fr 40px;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--grid-gap);
+  padding: var(--grid-gap);
   height: 100vh;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-/* Overall Grid Layout Constraint (360px Sidebar, fluid Main Panel) */
+/* Golden-ratio split: ~38% sidebar / ~62% output */
 .main {
   display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 0;
-  height: calc(100vh - 100px);
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  gap: var(--grid-gap);
   overflow: hidden;
+  min-height: 0;
 }
 
 .output {
   height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+
+.output-inner {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 /* Custom Scrollbars */

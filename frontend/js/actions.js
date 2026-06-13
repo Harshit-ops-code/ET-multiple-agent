@@ -75,15 +75,18 @@ function postNow(platform) {
   alert(`Posting to ${platform} now... (wire up your social API here)`);
 }
 
-async function schedulePost(platform, buttonEl) {
+async function schedulePost(platform, buttonEl, isPostNow = false) {
   const jobId = State.get("jobId");
-  const time  = document.getElementById("sched-time")?.value;
+  let time  = document.getElementById("sched-time")?.value;
+  if (isPostNow) {
+    time = "Now";
+  }
   const note  = document.getElementById("sched-note")?.value || "";
 
   if (!time) { alert("Please pick a schedule time first."); return; }
 
   buttonEl.disabled = true;
-  buttonEl.textContent = "Scheduling...";
+  buttonEl.textContent = isPostNow ? "Posting..." : "Scheduling...";
 
   try {
     const res  = await fetch(`${CONFIG.API}/api/schedule`, {
@@ -142,6 +145,12 @@ function getPlatforms() {
 async function generate() {
   const topic = el('topic')?.value.trim();
   if (!topic) { alert('Please enter a topic.'); return; }
+
+  // Collapse sidebar to make animation occupy full screen
+  const sidebar = document.querySelector('.sidebar');
+  const main = document.querySelector('.main');
+  if (sidebar) sidebar.style.display = 'none';
+  if (main) main.style.gridTemplateColumns = '1fr';
 
   UI.showSpinner("Generating draft...");
   const errorBox = el('errorBox'); if (errorBox) errorBox.style.display = 'none';

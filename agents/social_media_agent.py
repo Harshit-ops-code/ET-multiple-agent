@@ -25,12 +25,17 @@ LINKEDIN_SIZE  = (1200, 628)    # 1.91:1 landscape
 class SocialMediaAgent:
 
     def __init__(self):
-        self.llm = ChatGroq(
-            api_key=GROQ_API_KEY,
-            model_name=GROQ_MODEL,
-            temperature=0.75,
-            max_tokens=800,
-        )
+        self.llm = None
+        if GROQ_API_KEY:
+            try:
+                self.llm = ChatGroq(
+                    api_key=GROQ_API_KEY,
+                    model_name=GROQ_MODEL,
+                    temperature=0.75,
+                    max_tokens=800,
+                )
+            except Exception as e:
+                print(f"[SocialMediaAgent] Groq client unavailable: {e}")
         self.img_gen  = ImageGenerator()
         self.post_dir = os.path.join(OUTPUT_DIR, "social_posts")
         os.makedirs(self.post_dir, exist_ok=True)
@@ -455,7 +460,35 @@ class SocialMediaAgent:
 
     # ── HELPERS ───────────────────────────────────────────────────
 
+    def _ensure_fonts(self) -> tuple[str, str]:
+        """Ensure Roboto-Regular and Roboto-Bold exist in assets/fonts."""
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        fonts_dir = os.path.join(project_root, "assets", "fonts")
+        
+        regular_path = os.path.join(fonts_dir, "Roboto-Regular.ttf")
+        bold_path = os.path.join(fonts_dir, "Roboto-Bold.ttf")
+
+        if not os.path.exists(regular_path):
+            print(f"[SocialMediaAgent] Warning: Font not found: {regular_path}")
+        if not os.path.exists(bold_path):
+            print(f"[SocialMediaAgent] Warning: Font not found: {bold_path}")
+
+        return regular_path, bold_path
+
     def _font(self, size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+        try:
+            regular_path, bold_path = self._ensure_fonts()
+            target_path = bold_path if bold else regular_path
+
+            if os.path.exists(target_path) and os.path.getsize(target_path) > 1000:
+                try:
+                    return ImageFont.truetype(target_path, size)
+                except Exception as e:
+                    print(f"[SocialMediaAgent] Failed to load bundled font {target_path}: {e}")
+        except Exception as e:
+            print(f"[SocialMediaAgent] Font check error: {e}")
+
+        # System font fallbacks
         paths = []
         if bold:
             paths = [

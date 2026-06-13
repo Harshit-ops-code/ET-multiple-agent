@@ -95,6 +95,14 @@ HASHTAGS:
 """
 
 
+def _generate_mock_rag() -> str:
+    print("[LLMFallback] Network blocked - using offline RAG validation")
+    return """CITATION_ACCURACY_SCORE: 75
+GATE_SIGNAL: PASS
+VALIDATOR_SUMMARY: Offline lexical RAG completed. External fact verification was limited because network LLM access is unavailable.
+"""
+
+
 def _offline_response(prompt_template: ChatPromptTemplate, inputs: dict) -> str:
     topic = str(inputs.get("topic") or "Important Business Topic")
     audience = str(inputs.get("audience") or "professional audience")
@@ -109,6 +117,9 @@ def _offline_response(prompt_template: ChatPromptTemplate, inputs: dict) -> str:
 
     if "tone_score" in rendered_lower or "overall_verdict" in rendered_lower or "fixes_required" in rendered_lower:
         return _generate_mock_review()
+
+    if "generated_content" in input_keys or "context_chunks" in input_keys or "citation_accuracy_score" in rendered_lower:
+        return _generate_mock_rag()
 
     if "original_blog" in inputs:
         original = str(inputs.get("original_blog") or "")

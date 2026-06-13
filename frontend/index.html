@@ -5,18 +5,22 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Lexis AI · Content Intelligence Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="styles/base.css?v=102"/>
-<link rel="stylesheet" href="styles/header.css?v=102"/>
-<link rel="stylesheet" href="styles/sidebar.css?v=102"/>
-<link rel="stylesheet" href="styles/loading.css?v=102"/>
-<link rel="stylesheet" href="styles/results.css?v=102"/>
-<link rel="stylesheet" href="styles/footer.css?v=102"/>
-<link rel="stylesheet" href="styles/skeleton.css?v=102">
-<link rel="stylesheet" href="styles/hero.css?v=102"/>
-<link rel="stylesheet" href="styles/mobile.css?v=102">  <!-- always last -->
+<link rel="stylesheet" href="styles/base.css?v=104"/>
+<link rel="stylesheet" href="styles/header.css?v=104"/>
+<link rel="stylesheet" href="styles/sidebar.css?v=104"/>
+<link rel="stylesheet" href="styles/loading.css?v=104"/>
+<link rel="stylesheet" href="styles/results.css?v=104"/>
+<link rel="stylesheet" href="styles/footer.css?v=104"/>
+<link rel="stylesheet" href="styles/skeleton.css?v=104">
+<link rel="stylesheet" href="styles/hero.css?v=104"/>
+<link rel="stylesheet" href="styles/effects.css?v=104"/>
+<link rel="stylesheet" href="styles/mobile.css?v=104">  <!-- always last -->
 </head>
 <body>
 <section class="hero-page" id="hero-page">
+  <div class="hero-scroll-progress" aria-hidden="true">
+    <div class="hero-scroll-progress-fill" id="heroScrollProgress"></div>
+  </div>
   <canvas id="hero-stars"></canvas>
   
   <header class="hero-header">
@@ -34,21 +38,23 @@
 
   <div class="hero-hero-section">
     <div class="hero-container">
-      <div class="hero-left-column">
-        <span class="hero-badge">Beta Now Live!</span>
-        <h1 class="hero-heading">Your Multi-Agent AI Content Team, Working 24/7</h1>
-        <p class="hero-subheading">
+      <div class="hero-left-column hero-parallax-layer">
+        <span class="hero-badge reveal-fade-left" data-reveal-delay="0">Beta Now Live!</span>
+        <h1 class="hero-heading reveal-fade-left" data-reveal-delay="80">Your Multi-Agent AI Content Team, Working 24/7</h1>
+        <p class="hero-subheading reveal-fade-left" data-reveal-delay="160">
           Configure briefs, run multi-agent pipelines (Write → Validate → RAG → Review → Images → Social), and multiply content quality by 10x with AI Agents.
         </p>
-        <button class="hero-btn" onclick="enterApp()">
+        <button class="hero-btn reveal-fade-left" data-reveal-delay="240" onclick="enterApp()">
           Launch Lexis AI
           <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
         </button>
       </div>
-      <div class="hero-right-column">
-        <div class="avatar-3d-wrapper">
+      <div class="hero-right-column hero-parallax-layer">
+        <div class="avatar-3d-wrapper reveal-scale" data-reveal-delay="120">
+          <span class="avatar-3d-ring-label">AGENT CORE</span>
           <canvas id="hero-3d-avatar"></canvas>
           <div class="avatar-3d-glow"></div>
+          <span class="avatar-3d-hint">Drag to rotate · Scroll to explore</span>
         </div>
       </div>
     </div>
@@ -61,38 +67,38 @@
   </div>
 
   <div class="hero-features-section">
-    <div class="features-header">
+    <div class="features-header reveal-on-scroll">
       <h2 class="features-title">Lexis AI Content Intelligence Engine</h2>
       <p class="features-subtitle">The multi-agent pipeline writes, fact-checks, reviews, and publishes your content with corporate compliance guardrails.</p>
     </div>
     
     <div class="hero-features-grid">
-      <div class="hero-feature-card">
+      <div class="hero-feature-card reveal-on-scroll" data-reveal-delay="0">
         <div class="feature-card-icon">⚡</div>
         <div class="feature-card-title">LangGraph 6-Node Pipeline</div>
         <div class="feature-card-desc">Write → Validate → RAG → Review → Images → Social media posts in a structured passing workflow.</div>
       </div>
-      <div class="hero-feature-card">
+      <div class="hero-feature-card reveal-on-scroll" data-reveal-delay="80">
         <div class="feature-card-icon">🔍</div>
         <div class="feature-card-title">RAG Fact-Checking</div>
         <div class="feature-card-desc">Factual validation against retrieved web search contexts (Tavily search API) and Chroma vector store data.</div>
       </div>
-      <div class="hero-feature-card">
+      <div class="hero-feature-card reveal-on-scroll" data-reveal-delay="160">
         <div class="feature-card-icon">🔒</div>
         <div class="feature-card-title">5-Layer Compliance Review</div>
         <div class="feature-card-desc">Thorough automated audits targeting Brand Voice, Legal names, Tone consistency, Policy, and Accuracy.</div>
       </div>
-      <div class="hero-feature-card">
+      <div class="hero-feature-card reveal-on-scroll" data-reveal-delay="240">
         <div class="feature-card-icon">🖼</div>
         <div class="feature-card-title">AI Image Generation</div>
         <div class="feature-card-desc">Stability AI graphics generated in three aspect ratio crops (Blog Hero, Instagram Square, LinkedIn landscape).</div>
       </div>
-      <div class="hero-feature-card">
+      <div class="hero-feature-card reveal-on-scroll" data-reveal-delay="320">
         <div class="feature-card-icon">📱</div>
         <div class="feature-card-title">Automated Social Previews</div>
         <div class="feature-card-desc">Pre-formatted templates rendering exact LinkedIn feed posts and Instagram cards with user interactions.</div>
       </div>
-      <div class="hero-feature-card">
+      <div class="hero-feature-card reveal-on-scroll" data-reveal-delay="400">
         <div class="feature-card-icon">👤</div>
         <div class="feature-card-title">Human-in-the-Loop approval gate</div>
         <div class="feature-card-desc">Review engine score cards and request manual refinement loops directly before publishing.</div>
@@ -141,6 +147,13 @@
       <span>⚙️ Configure Content Brief</span>
       <span class="arrow">▼</span>
     </button>
+
+    <div class="sidebar-header">
+      <div class="sidebar-header-title">Content Brief</div>
+      <div class="sidebar-header-sub">Configure mode, audience, and pipeline options</div>
+    </div>
+
+    <div class="sidebar-body">
     <div class="sidebar-section">
       <div class="section-label">Blog Mode</div>
       <div class="mode-switch">
@@ -249,11 +262,15 @@
           <label class="check-item" data-lang="German"><input type="checkbox">🇩🇪 German</label>
           <label class="check-item" data-lang="Japanese"><input type="checkbox">🇯🇵 Japanese</label>
           <label class="check-item" data-lang="French"><input type="checkbox">🇫🇷 French</label>
+          <label class="check-item" data-lang="Hindi"><input type="checkbox">🇮🇳 Hindi</label>
+          <label class="check-item" data-lang="Arabic"><input type="checkbox">🇸🇦 Arabic</label>
         </div>
       </div>
     </div>
 
-    <div class="sidebar-section" style="border-bottom:none;">
+    </div>
+
+    <div class="sidebar-footer">
       <button class="btn-generate" id="generateBtn" onclick="generate()">
         <div class="btn-spinner" id="btn-spinner"></div>
         <span id="btn-text">⚡ Generate Content</span>
@@ -265,11 +282,22 @@
   <div class="output" id="outputPanel">
 
     <div class="empty-state" id="emptyState">
-      <div class="empty-icon">✨</div>
+      <div class="empty-orb-wrap">
+        <div class="empty-orb-glow"></div>
+        <canvas id="empty-state-orb" aria-label="Interactive 3D agent orb"></canvas>
+      </div>
       <h3>Lexis AI Content Intelligence Engine</h3>
       <p>Configure your content brief on the left and hit Generate. The multi-agent pipeline will write, fact-check, review, and publish your content.</p>
-      <div style="font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 16px; margin-top: 8px; width: 100%; text-align: center;">
-        💡 You can configure Mode, target audience, images generation, social media publishing, and translation languages inside the brief settings.
+      <div class="empty-pipeline">
+        <div class="empty-pipeline-step"><span>✍️</span>Write</div>
+        <div class="empty-pipeline-step"><span>🔍</span>Validate</div>
+        <div class="empty-pipeline-step"><span>🧠</span>RAG</div>
+        <div class="empty-pipeline-step"><span>🔒</span>Review</div>
+        <div class="empty-pipeline-step"><span>🖼</span>Images</div>
+        <div class="empty-pipeline-step"><span>📱</span>Social</div>
+      </div>
+      <div class="empty-tip">
+        💡 Configure mode, target audience, images, social publishing, and translation languages in the brief panel.
       </div>
     </div>
 
@@ -411,7 +439,7 @@
           <div class="blog-content" id="blogContent"></div>
           <div class="kw-row" id="kwRow"></div>
           <div class="cta-box" id="ctaBox"><strong>Call to Action</strong><span id="ctaText"></span></div>
-          <div style="margin-top:12px;display:flex;gap:8px;">
+          <div class="blog-actions">
             <button class="btn-small accent" onclick="copyBlog(this)">⎘ Copy Markdown</button>
             <button class="btn-small" onclick="downloadBlog()">⬇ Download .md</button>
             <button class="btn-small" onclick="copyBlogHtml(this)">⎘ Copy HTML</button>
@@ -520,7 +548,7 @@
       
       <div class="tab-content" id="tab-translations">
         <div class="blog-area fade-in">
-          <div style="margin-bottom:15px; color: var(--gold); font-weight:bold;">⚡ Processed by C++ Parallel Engine</div>
+          <div style="margin-bottom:15px; color: var(--gold); font-weight:bold;">⚡ Simple Translation</div>
           <div id="translationsWrap" style="display:flex; flex-direction:column; gap:20px;">
             <div style="text-align:center;padding:30px;color:var(--muted);font-size:12px;">No translations requested or still processing.</div>
           </div>
@@ -550,8 +578,8 @@
               <input type="text" id="sched-note" placeholder="Campaign name, context..."/>
             </div>
             <div class="schedule-actions">
-              <button class="btn-schedule" onclick="schedulePost()">📅 Schedule Post</button>
-              <button class="btn-small" onclick="schedulePost(true)" style="padding:9px 16px;">⚡ Post Now</button>
+              <button class="btn-schedule" onclick="schedulePost(document.getElementById('sched-platform').value, this)">📅 Schedule Post</button>
+              <button class="btn-small" onclick="schedulePost(document.getElementById('sched-platform').value, this, true)" style="padding:9px 16px;">⚡ Post Now</button>
             </div>
           </div>
           <div>
@@ -623,13 +651,14 @@
   </div>
 </div>
 
-<script src="js/config.js?v=102"></script>
-<script src="js/state.js?v=102"></script>
-<script src="js/pipeline.js?v=102"></script>
-<script src="js/ui.js?v=102"></script>
-<script src="js/actions.js?v=102"></script>
-<script src="js/shortcuts.js?v=102"></script>
-<script src="js/hero.js?v=102"></script>
+<script src="js/config.js?v=104"></script>
+<script src="js/state.js?v=104"></script>
+<script src="js/pipeline.js?v=104"></script>
+<script src="js/ui.js?v=104"></script>
+<script src="js/actions.js?v=104"></script>
+<script src="js/shortcuts.js?v=104"></script>
+<script src="js/hero.js?v=104"></script>
+<script src="js/effects.js?v=104"></script>
 <script>
   const toggle = document.querySelector('.sidebar-toggle');
   const sidebar = document.querySelector('.sidebar');

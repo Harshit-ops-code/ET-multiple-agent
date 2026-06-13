@@ -1,7 +1,5 @@
 from langgraph.graph import StateGraph, END
-from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 from typing import TypedDict, Literal, Optional
 from config import GROQ_API_KEY, GROQ_MODEL, MAX_REGENERATIONS, BRAND_NAME
 from prompts.blog_writer_prompt import (
@@ -68,13 +66,9 @@ class BlogState(TypedDict):
     localized_content: dict
 
 
-# ── LLM instance ──────────────────────────────────────────────────
-llm = ChatGroq(
-    api_key=GROQ_API_KEY,
-    model_name=GROQ_MODEL,
-    temperature=0.7,
-    max_tokens=4096,
-)
+# Keep LLM creation lazy. Vercel may import the app before API keys exist,
+# and import-time client validation can crash the serverless function.
+llm = None
 
 
 # ── Node: write_blog ──────────────────────────────────────────────

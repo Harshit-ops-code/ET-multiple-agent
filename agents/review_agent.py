@@ -15,17 +15,23 @@ class ReviewAgent:
     """
 
     def __init__(self):
-        self.llm = ChatGroq(
-            api_key=GROQ_API_KEY,
-            model_name=GROQ_MODEL,
-            temperature=0.0,   # zero temp — we want deterministic compliance decisions
-            max_tokens=2048,
-        )
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", REVIEW_SYSTEM_PROMPT),
             ("human",  REVIEW_HUMAN_TEMPLATE),
         ])
-        self.chain = self.prompt | self.llm | StrOutputParser()
+        self.llm = None
+        self.chain = None
+        if GROQ_API_KEY:
+            try:
+                self.llm = ChatGroq(
+                    api_key=GROQ_API_KEY,
+                    model_name=GROQ_MODEL,
+                    temperature=0.0,
+                    max_tokens=2048,
+                )
+                self.chain = self.prompt | self.llm | StrOutputParser()
+            except Exception as e:
+                print(f"[ReviewAgent] Groq client unavailable: {e}")
 
     def review(self, content: str, mode: str, source_context: str = "") -> dict:
         print(f"\n[ReviewAgent] Running 5-layer compliance review...")

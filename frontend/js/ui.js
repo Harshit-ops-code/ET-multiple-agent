@@ -205,7 +205,7 @@ const UI = (() => {
 
   async function submitFeedback(action, feedback = "") {
     const jobId = State.get("jobId");
-    const langs = State.get("targetLanguages") || [];
+    const langs = [...document.querySelectorAll('#lang-grid .check-item.checked')].map(item => item.dataset.lang);
 
     const btnApprove = document.getElementById("btnApprove");
     const btnRefine = document.getElementById("btnRefine");
@@ -1072,6 +1072,12 @@ function resetUI() {
   UI.hideHumanGate();
   UI.stopStopwatch();
   UI.stopLogStream();
+  
+  // Restore sidebar
+  const sidebar = document.querySelector('.sidebar');
+  const main = document.querySelector('.main');
+  if (sidebar) sidebar.style.display = 'flex';
+  if (main) main.style.gridTemplateColumns = '';
   
   // Clear inputs
   const topic = el('topic'); if (topic) topic.value = '';

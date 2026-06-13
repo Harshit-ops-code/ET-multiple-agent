@@ -13,6 +13,7 @@
   let time = 0;
   let animationFrameId;
   let heroElement;
+  let heroRunning = true;
 
   function init() {
     heroElement = document.getElementById("hero-page");
@@ -67,6 +68,7 @@
   }
 
   function animate() {
+    if (!heroRunning) return;
     // Semi-transparent clearing for beautiful motion blur tail sweeps
     ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -138,12 +140,19 @@
     let points = [];
     let rotationX = 0.4, rotationY = -0.6;
     let targetRotationX = 0.4, targetRotationY = -0.6;
+    let scrollBoost = 0;
     let isDragging = false;
+    let isRunning = true;
     let startX = 0, startY = 0;
     let time = 0;
-    
+
     // Orbiting particles representing data flows
     const orbits = [];
+    const rings = [
+      { rx: 1.25, ry: 0.42, tilt: 0.3, speed: 0.018, color: "79, 70, 229" },
+      { rx: 1.38, ry: 0.35, tilt: -0.6, speed: -0.012, color: "13, 148, 136" },
+      { rx: 1.12, ry: 0.55, tilt: 1.1, speed: 0.009, color: "79, 70, 229" }
+    ];
     
     function init() {
       canvas = document.getElementById("hero-3d-avatar");
@@ -250,16 +259,99 @@
       height = canvas.clientHeight;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
+    }
+
+    function setScrollProgress(p) {
+      scrollBoost = p;
+      if (!isDragging) {
+        targetRotationY = -0.6 + p * 1.2;
+        targetRotationX = 0.4 + p * 0.35;
+      }
+    }
+
+    function pause() {
+      isRunning = false;
+      if (animId) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
+    }
+
+    function resume() {
+      if (isRunning) return;
+      isRunning = true;
+      animateAvatar();
+    }
+
+    function drawRing(cx, cy, baseR, ring, cosX, sinX, cosY, sinY) {
+      const steps = 48;
+      const ringAngle = time * ring.speed;
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const a = (i / steps) * Math.PI * 2 + ringAngle;
+        const ox = Math.cos(a) * baseR * ring.rx;
+        const oz = Math.sin(a) * baseR * ring.rx * 0.85;
+        const oy = Math.sin(a + ring.tilt) * baseR * ring.ry;
+
+        const x1 = ox * cosY - oz * sinY;
+        const z1 = ox * sinY + oz * cosY;
+        const y2 = oy * cosX - z1 * sinX;
+        const z2 = oy * sinX + z1 * cosX;
+
+        const f = 280;
+        const scale = f / (f + z2);
+        const px = cx + x1 * scale;
+        const py = cy + y2 * scale;
+
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      const alpha = 0.14 + Math.sin(time * 2 + ring.tilt) * 0.06;
+      ctx.strokeStyle = `rgba(${ring.color}, ${alpha})`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+
+    function drawCore(cx, cy) {
+      const pulse = 1 + Math.sin(time * 2.5) * 0.1;
+      const coreR = 28 * pulse;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR * 1.8);
+      grad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+      grad.addColorStop(0.35, "rgba(79, 70, 229, 0.25)");
+      grad.addColorStop(1, "rgba(79, 70, 229, 0)");
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreR * 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreR * 0.55, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(79, 70, 229, 0.12)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(79, 70, 229, 0.35)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.font = "800 14px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillStyle = "rgba(79, 70, 229, 0.95)";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("LX", cx, cy + 1);
     }
     
     function animateAvatar() {
-      if (!canvas || !ctx) return;
+      if (!canvas || !ctx || !isRunning) return;
       ctx.clearRect(0, 0, width, height);
-      
-      time += 0.012;
-      
-      // Interpolate rotation
+
+      time += 0.012 + scrollBoost * 0.008;
+
+      // Interpolate rotation + gentle auto-spin
+      if (!isDragging) {
+        targetRotationY += 0.0015 + scrollBoost * 0.004;
+      }
       rotationX += (targetRotationX - rotationX) * 0.12;
       rotationY += (targetRotationY - rotationY) * 0.12;
       
@@ -270,7 +362,11 @@
       
       const cx = width / 2;
       const cy = height / 2;
-      
+      const baseR = 85;
+
+      // Energy rings behind mesh
+      rings.forEach((ring) => drawRing(cx, cy, baseR, ring, cosX, sinX, cosY, sinY));
+
       // 1. Waving radius morphing & 3D rotation projection
       points.forEach(p => {
         // Morph radius based on 3D coordinates + time
@@ -369,12 +465,17 @@
         ctx.fillStyle = `rgba(${orb.color}, ${alpha * 0.25})`;
         ctx.fill();
       });
-      
+
+      // 5. Agent core
+      drawCore(cx, cy);
+
       animId = requestAnimationFrame(animateAvatar);
     }
-    
-    return { init };
+
+    return { init, setScrollProgress, pause, resume };
   })();
+
+  window.Avatar3D = Avatar3D;
 
   window.enterApp = function() {
     if (!heroElement) return;
@@ -391,6 +492,9 @@
     }
 
     heroElement.classList.add("fade-out");
+    heroRunning = false;
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    Avatar3D.pause();
     setTimeout(() => {
       heroElement.style.display = "none";
       document.body.style.overflow = "";
@@ -401,8 +505,11 @@
     if (!heroElement) return;
     heroElement.style.display = "block";
     document.body.style.overflow = "hidden";
+    heroRunning = true;
     void heroElement.offsetWidth;
     heroElement.classList.remove("fade-out");
+    Avatar3D.resume();
+    animate();
   };
 
   document.body.style.overflow = "hidden";

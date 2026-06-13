@@ -12,7 +12,9 @@ class LocalizationWrapper:
     def __init__(self):
         # Resolve the binary relative to the project, not the caller's cwd.
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.binary_path = os.path.join(project_root, "engine", "localization_agent.exe")
+        import platform
+        ext = ".exe" if platform.system() == "Windows" else ""
+        self.binary_path = os.path.join(project_root, "engine", f"localization_agent{ext}")
 
     def localize(self, final_blog: str, target_languages: list) -> dict:
         print(f"\n[LocalizationWrapper] Offloading to C++ engine for: {target_languages}")

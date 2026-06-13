@@ -1,0 +1,14 @@
+.codex-venv/
+.venv/
+venv/
+.pip-cache/
+.pytest-tmp/
+.pytest_cache/
+__pycache__/
+*.pyc
+jobs.db
+*.db
+outputs/
+rag/chroma_db/
+.env
+server-smoke*.log

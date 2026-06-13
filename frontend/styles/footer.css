@@ -1,10 +1,11 @@
 footer {
-  border-top: 1px solid var(--border);
-  padding: 10px 24px;
-  height: 40px;
-  display: flex;
+  border-top: none;
+  padding: 10px var(--page-padding);
+  min-height: var(--footer-height);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
   background: var(--surface);
   font-family: var(--font-sans);
   font-size: 10px;
@@ -12,6 +13,10 @@ footer {
   color: var(--muted);
   position: relative;
   z-index: 10;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
 }
 
 .footer-dot {

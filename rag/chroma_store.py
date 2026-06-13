@@ -15,6 +15,62 @@ except ImportError:
     embedding_functions = None
 
 
+DATABASE_URL = os.getenv("DATABASE_URL")
+_use_postgres = bool(DATABASE_URL)
+
+
+def _connect_postgres():
+    import pg8000
+    import urllib.parse
+    import ssl
+
+    url = urllib.parse.urlparse(DATABASE_URL)
+    database = url.path[1:]
+    port = url.port or 5432
+
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
+    conn = pg8000.connect(
+        user=url.username,
+        password=url.password,
+        host=url.hostname,
+        port=port,
+        database=database,
+        ssl_context=ssl_context
+    )
+    return conn
+
+
+def _init_postgres_collections():
+    if not _use_postgres:
+        return
+    conn = _connect_postgres()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS collections (
+                collection_name VARCHAR(255) NOT NULL,
+                doc_id          VARCHAR(255) NOT NULL,
+                document        TEXT NOT NULL,
+                metadata        TEXT,
+                PRIMARY KEY (collection_name, doc_id)
+            )
+        """)
+        conn.commit()
+        cursor.close()
+    finally:
+        conn.close()
+
+
+if _use_postgres:
+    try:
+        _init_postgres_collections()
+    except Exception as e:
+        print(f"[RAG] Failed to initialize Postgres collections: {e}")
+
+
 _fallback_collections: dict[str, list[dict]] = {}
 
 
@@ -58,6 +114,8 @@ else:
 
 def get_or_create_collection(name: str):
     if client is None:
+        if _use_postgres:
+            return name
         _fallback_collections.setdefault(name, [])
         return name
 
@@ -70,6 +128,25 @@ def get_or_create_collection(name: str):
 
 def upsert_documents(collection_name: str, documents: list[dict]):
     if client is None:
+        if _use_postgres:
+            import json
+            conn = _connect_postgres()
+            try:
+                cursor = conn.cursor()
+                for doc in documents:
+                    sql = """
+                        INSERT INTO collections (collection_name, doc_id, document, metadata)
+                        VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (collection_name, doc_id)
+                        DO UPDATE SET document = EXCLUDED.document, metadata = EXCLUDED.metadata
+                    """
+                    cursor.execute(sql, (collection_name, doc["id"], doc["text"], json.dumps(doc["metadata"])))
+                conn.commit()
+                cursor.close()
+            finally:
+                conn.close()
+            return collection_name
+
         collection = _fallback_collections.setdefault(collection_name, [])
         by_id = {doc["id"]: doc for doc in collection}
         for doc in documents:
@@ -88,7 +165,30 @@ def upsert_documents(collection_name: str, documents: list[dict]):
 
 def query_collection(collection_name: str, query: str, n_results: int = 3):
     if client is None:
-        collection = _fallback_collections.get(collection_name, [])
+        if _use_postgres:
+            import json
+            conn = _connect_postgres()
+            collection = []
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT doc_id, document, metadata FROM collections WHERE collection_name = %s",
+                    (collection_name,)
+                )
+                rows = cursor.fetchall()
+                for r in rows:
+                    meta = json.loads(r[2]) if r[2] else {}
+                    collection.append({
+                        "id": r[0],
+                        "text": r[1],
+                        "metadata": meta
+                    })
+                cursor.close()
+            finally:
+                conn.close()
+        else:
+            collection = _fallback_collections.get(collection_name, [])
+
         ranked = sorted(
             collection,
             key=lambda doc: _cosine_distance(query, doc.get("text", "")),
@@ -120,6 +220,17 @@ def query_collection(collection_name: str, query: str, n_results: int = 3):
 
 def delete_collection(name: str):
     if client is None:
+        if _use_postgres:
+            conn = _connect_postgres()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM collections WHERE collection_name = %s", (name,))
+                conn.commit()
+                cursor.close()
+            finally:
+                conn.close()
+            return
+
         _fallback_collections.pop(name, None)
         return
 

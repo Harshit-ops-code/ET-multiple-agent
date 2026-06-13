@@ -7,7 +7,7 @@
 env.txt
 *.env
 .env.*
-!.env.example        # keep the example file
+!.env.example
 
 # ── Database ──────────────────────────────────
 jobs.db
@@ -32,6 +32,8 @@ pip-delete-this-directory.txt
 htmlcov/
 .coverage
 coverage.xml
+pytest_output.log
+*.log
 *.egg-info/
 dist/
 build/

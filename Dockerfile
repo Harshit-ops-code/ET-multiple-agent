@@ -19,6 +19,9 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 # Copy project
 COPY . .
 
+# Compile C++ localization engine
+RUN g++ -O3 -std=c++17 engine/localization_agent.cpp -o engine/localization_agent
+
 # Don't copy secrets
 # Make sure .dockerignore excludes .env and jobs.db
 

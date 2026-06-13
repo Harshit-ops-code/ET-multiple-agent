@@ -60,8 +60,8 @@ const Skeleton = (() => {
     </div>`;
 
   function show() {
-    _inject("blogTab",    BLOG_HTML,   "skeletonBlog");
-    _inject("socialTab",  SOCIAL_HTML, "skeletonSocial");
+    _inject("tab-blog",    BLOG_HTML,   "skeletonBlog");
+    _inject("tab-social",  SOCIAL_HTML, "skeletonSocial");
   }
 
   function hide() {

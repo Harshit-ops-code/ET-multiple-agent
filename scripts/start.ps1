@@ -7,25 +7,32 @@ $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent $scriptDir
-$venvPython = [System.IO.Path]::GetFullPath((Join-Path $projectRoot "venv\Scripts\python.exe"))
-$pythonExe = "python"
-$useVenvPython = $false
+$pythonCandidates = @(
+    (Join-Path $projectRoot ".codex-venv\Scripts\python.exe"),
+    (Join-Path $projectRoot ".venv\Scripts\python.exe"),
+    (Join-Path $projectRoot "venv\Scripts\python.exe")
+)
+$pythonExe = $null
 
-if (Test-Path $venvPython) {
+foreach ($candidate in $pythonCandidates) {
+    if (-not (Test-Path $candidate)) {
+        continue
+    }
+
     try {
-        # Check if venv python runs and is not blocked by permissions
-        $testRun = Start-Process $venvPython -ArgumentList "-V" -NoNewWindow -PassThru -Wait -ErrorAction Stop
+        $resolved = [System.IO.Path]::GetFullPath($candidate)
+        $testRun = Start-Process $resolved -ArgumentList "-V" -NoNewWindow -PassThru -Wait -ErrorAction Stop
         if ($testRun.ExitCode -eq 0) {
-            $useVenvPython = $true
-            $pythonExe = $venvPython
-        } else {
-            Write-Host "Virtual environment Python is blocked or returned exit code $($testRun.ExitCode). Falling back to system python."
+            $pythonExe = $resolved
+            break
         }
     } catch {
-        Write-Host "Virtual environment Python is not runnable (Access is denied or blocked). Falling back to system python."
+        Write-Host "Skipping blocked Python: $candidate"
     }
-} else {
-    Write-Host "Virtual environment Python not found. Using system python."
+}
+
+if (-not $pythonExe) {
+    Write-Error "No runnable Python environment found. Create .codex-venv or .venv and install requirements."
 }
 
 $backendUrl = "http://127.0.0.1:8000/api/health"

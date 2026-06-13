@@ -126,7 +126,7 @@ class BlogWriterAgent:
         e.g. [Daily Mail](https://...) → Daily Mail
         """
         import re
-        links_found = re.findall(r'\[([^\]]+)\]\(https?://[^\)]+\)', content)
+        links_found = re.findall(r'\[([^\]]+)\]\((https?://[^\s)]+)\)', content)
 
         if len(links_found) <= 3:
             return content  # already fine, nothing to clean
@@ -140,7 +140,7 @@ class BlogWriterAgent:
                 return match.group(0)   # keep first 3 as full links
             return match.group(1)       # strip URL, keep anchor text only
 
-        cleaned = re.sub(r'\[([^\]]+)\]\(https?://[^\)]+\)', replace_link, content)
+        cleaned = re.sub(r'\[([^\]]+)\]\((https?://[^\s)]+)\)', replace_link, content)
         return cleaned
 
     def _save_blog(self, parsed: dict, topic: str):
