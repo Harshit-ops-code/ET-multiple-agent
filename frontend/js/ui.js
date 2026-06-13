@@ -407,11 +407,11 @@ const UI = (() => {
       ctx = canvas.getContext("2d");
       resize();
       
-      const radius = 95;
+      const radius = 170;
       nodes.forEach((node, i) => {
         const angle = (i / nodes.length) * Math.PI * 2;
         node.ox = radius * Math.cos(angle);
-        node.oy = (i - 3) * 16;
+        node.oy = (i - 3) * 28;
         node.oz = radius * Math.sin(angle);
         node.x = node.ox;
         node.y = node.oy;
@@ -687,7 +687,7 @@ const UI = (() => {
         } else {
           const n = obj.item;
           const status = nodeStatuses[n.key] || "pending";
-          const radius = 6 * n.scale;
+          const radius = 9 * n.scale;
 
           ctx.beginPath();
           ctx.arc(n.px, n.py, radius, 0, Math.PI * 2);

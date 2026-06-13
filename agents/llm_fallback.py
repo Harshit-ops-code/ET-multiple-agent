@@ -147,6 +147,10 @@ def _offline_response(prompt_template: ChatPromptTemplate, inputs: dict) -> str:
     if not is_blog_request and (
         "instagram" in rendered_lower or "linkedin" in rendered_lower or "caption" in rendered_lower or "social" in rendered_lower
     ):
+        if "instagram" in rendered_lower:
+            return f"Small teams can improve customer support without adding complexity. {topic} helps automate repeated questions, draft faster replies, and keep customer conversations moving. #SmallBusiness #CustomerSupport"
+        elif "linkedin" in rendered_lower:
+            return f"Customer support speed matters, especially for small businesses. {topic} gives teams a practical way to answer common questions, prepare consistent replies, and focus human attention where it matters most. #AI #Automation #Productivity"
         return _generate_mock_social(topic)
 
     return _generate_mock_blog(topic, audience)
