@@ -194,9 +194,12 @@ class ImageGenerator:
             print("[ImageGenerator] Bytez generation failed, trying Stability fallback")
 
         if self.stability_api_key:
-            return self._call_stability(prompt, negative, fmt)
+            image = self._call_stability(prompt, negative, fmt)
+            if image:
+                return image
 
-        return None
+        print(f"[ImageGenerator] All API providers failed for {fmt} - generating beautiful offline fallback placeholder")
+        return self._create_fallback_image(prompt, fmt)
 
     def _call_gemini(self, prompt: str, fmt: str) -> dict | None:
         spec = self.FORMATS.get(fmt, self.FORMATS["blog"])
@@ -425,8 +428,90 @@ class ImageGenerator:
         return clean[: limit - 3].rstrip() + "..."
 
     def _save_image(self, image_b64: str, fmt: str) -> str:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{self.img_dir}/{timestamp}_{fmt}.png"
-        with open(filename, "wb") as file_obj:
-            file_obj.write(base64.b64decode(image_b64))
-        return filename
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{self.img_dir}/{timestamp}_{fmt}.png"
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            with open(filename, "wb") as file_obj:
+                file_obj.write(base64.b64decode(image_b64))
+            return filename
+        except Exception as e:
+            print(f"[ImageGenerator] Warning: Failed to save image to disk: {e}")
+            return ""
+
+    def _font(self, size: int) -> ImageFont.FreeTypeFont:
+        from PIL import ImageFont
+        paths = [
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/calibri.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+        ]
+        for p in paths:
+            if os.path.exists(p):
+                try:
+                    return ImageFont.truetype(p, size)
+                except Exception:
+                    continue
+        return ImageFont.load_default()
+
+    def _create_fallback_image(self, prompt: str, fmt: str) -> dict:
+        from PIL import Image, ImageDraw, ImageFont
+        spec = self.FORMATS.get(fmt, self.FORMATS["blog"])
+        w, h = spec["width"], spec["height"]
+        
+        # Slate 800 background
+        img = Image.new("RGB", (w, h), (15, 23, 42))
+        draw = ImageDraw.Draw(img)
+        
+        # Draw elegant modern tech grid and glow
+        grid_size = 40
+        for x in range(0, w, grid_size):
+            draw.line([(x, 0), (x, h)], fill=(30, 41, 59), width=1)
+        for y in range(0, h, grid_size):
+            draw.line([(0, y), (w, y)], fill=(30, 41, 59), width=1)
+            
+        # Draw double border with color accents matching premium design (Indigo to Teal gradient)
+        border_col = (99, 102, 241) if fmt == "instagram" else (20, 184, 166) if fmt == "linkedin" else (168, 85, 247)
+        draw.rectangle([(20, 20), (w - 20, h - 20)], outline=border_col, width=3)
+        draw.rectangle([(25, 25), (w - 25, h - 25)], outline=(30, 41, 59), width=1)
+        
+        # Load a nice bold font for subtitle
+        font = self._font(min(w, h) // 12)
+        font_sm = self._font(min(w, h) // 20)
+        
+        title_text = "LE-XIS AI"
+        subtitle_text = f"GENAI IMAGE: {fmt.upper()} ({w}x{h})"
+        
+        # Draw text centered
+        bbox = draw.textbbox((0, 0), title_text, font=font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        
+        bbox_sm = draw.textbbox((0, 0), subtitle_text, font=font_sm)
+        tw_sm = bbox_sm[2] - bbox_sm[0]
+        th_sm = bbox_sm[3] - bbox_sm[1]
+        
+        # Center title
+        draw.text(((w - tw) // 2, (h // 2) - th - 10), title_text, font=font, fill=(255, 255, 255))
+        # Center subtitle
+        draw.text(((w - tw_sm) // 2, (h // 2) + 10), subtitle_text, font=font_sm, fill=border_col)
+        
+        # Export base64
+        import io
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        image_b64 = base64.b64encode(buf.getvalue()).decode()
+        
+        filename = self._save_image(image_b64, fmt)
+        
+        return {
+            "path": filename,
+            "base64": image_b64,
+            "format": fmt,
+            "label": spec["label"],
+            "width": w,
+            "height": h,
+            "provider": "offline_fallback",
+            "model": "pil_premium_generator",
+        }

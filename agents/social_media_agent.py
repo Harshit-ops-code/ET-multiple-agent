@@ -519,8 +519,13 @@ class SocialMediaAgent:
         return base64.b64encode(buf.getvalue()).decode()
 
     def _save(self, b64: str, platform: str) -> str:
-        ts   = datetime.now().strftime("%Y%m%d_%H%M%S")
-        path = f"{self.post_dir}/{ts}_{platform}.png"
-        with open(path, "wb") as f:
-            f.write(base64.b64decode(b64))
-        return path
+        try:
+            ts   = datetime.now().strftime("%Y%m%d_%H%M%S")
+            path = f"{self.post_dir}/{ts}_{platform}.png"
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as f:
+                f.write(base64.b64decode(b64))
+            return path
+        except Exception as e:
+            print(f"[SocialMediaAgent] Warning: Failed to save social image to disk: {e}")
+            return ""
