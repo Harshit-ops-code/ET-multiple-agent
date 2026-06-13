@@ -77,8 +77,10 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-if os.path.exists("frontend"):
-    app.mount("/app", StaticFiles(directory="frontend", html=True), name="frontend")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+frontend_dir = os.path.join(BASE_DIR, "frontend")
+if os.path.exists(frontend_dir):
+    app.mount("/app", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 # ── Request models ────────────────────────────────────────────────────────────
 

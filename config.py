@@ -19,5 +19,10 @@ MAX_REGENERATIONS = 3  # LangGraph retry limit
 
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"  # local, fast, free
-CHROMA_DB_PATH = "./rag/chroma_db"
-OUTPUT_DIR = "./outputs/blogs"
+
+if os.getenv("VERCEL"):
+    CHROMA_DB_PATH = "/tmp/rag/chroma_db"
+    OUTPUT_DIR = "/tmp/outputs/blogs"
+else:
+    CHROMA_DB_PATH = "./rag/chroma_db"
+    OUTPUT_DIR = "./outputs/blogs"
