@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 import requests
+from PIL import Image, ImageDraw, ImageFont
 
 from config import BYTEZ_API_KEY, BYTEZ_IMAGE_MODEL, OUTPUT_DIR, STABILITY_API_KEY, GEMINI_API_KEY
 
