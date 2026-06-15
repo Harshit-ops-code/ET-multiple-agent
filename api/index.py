@@ -8,3 +8,5 @@ if str(ROOT) not in sys.path:
 
 os.environ.setdefault("VERCEL", "1")
 
+from api_server import app  # noqa: F401
+
