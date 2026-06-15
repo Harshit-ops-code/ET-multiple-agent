@@ -30,7 +30,7 @@ jobs:
           sed -i 's/your_.*_here/dummy_value/g' .env
 
       - name: Run tests
-        run: pytest tests/ -v --tb=short
+        run: python -m pytest tests/ -v --tb=short
 
   lint:
     runs-on: ubuntu-latest
