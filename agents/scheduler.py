@@ -39,14 +39,14 @@ class SocialScheduler:
         
         if platform in ["both", "instagram"] and "instagram" in social_data:
             ig = social_data["instagram"]
-            print(f"[Instagram]")
+            print("[Instagram]")
             print(f"Caption: {ig.get('caption', '')[:100]}...")
             print(f"Image attached: {'Yes (base64 length ' + str(len(ig.get('image_b64', ''))) + ')' if ig.get('image_b64') else 'No'}")
             print("-" * 50)
             
         if platform in ["both", "linkedin"] and "linkedin" in social_data:
             li = social_data["linkedin"]
-            print(f"[LinkedIn]")
+            print("[LinkedIn]")
             print(f"Post Text: {li.get('post_text', '')[:100]}...")
             print(f"Image attached: {'Yes (base64 length ' + str(len(li.get('image_b64', ''))) + ')' if li.get('image_b64') else 'No'}")
             print("-" * 50)

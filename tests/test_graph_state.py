@@ -1,4 +1,3 @@
-from graph.blog_graph import blog_graph
 
 initial_state = {
     "mode": "news",

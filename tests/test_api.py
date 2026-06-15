@@ -12,7 +12,12 @@ from unittest.mock import patch
 def store(tmp_path):
     from job_store import JobStore
     db_file = tmp_path / "test_jobs.db"
-    return JobStore(db_path=str(db_file))
+    s = JobStore(db_path=str(db_file))
+    s._run_query("DELETE FROM jobs", commit=True)
+    s._run_query("DELETE FROM scheduled_posts", commit=True)
+    yield s
+    s._run_query("DELETE FROM jobs", commit=True)
+    s._run_query("DELETE FROM scheduled_posts", commit=True)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -66,12 +71,11 @@ def test_job_store_cleanup(store):
     job_id = str(uuid.uuid4())
     store.create(job_id, {"status": "completed"})
     # Force the start_time into the past
-    with store._connect() as conn:
-        conn.execute(
-            "UPDATE jobs SET start_time = ? WHERE job_id = ?",
-            (time.time() - 99999, job_id)
-        )
-        conn.commit()
+    store._run_query(
+        "UPDATE jobs SET start_time = ? WHERE job_id = ?",
+        (time.time() - 99999, job_id),
+        commit=True
+    )
     removed = store.cleanup()
     assert removed >= 1
     assert store.get(job_id) is None

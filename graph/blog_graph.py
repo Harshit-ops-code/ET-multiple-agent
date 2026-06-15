@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END
 from langchain_core.prompts import ChatPromptTemplate
-from typing import TypedDict, Literal, Optional
-from config import GROQ_API_KEY, GROQ_MODEL, MAX_REGENERATIONS, BRAND_NAME
+from typing import TypedDict, Literal
+from config import MAX_REGENERATIONS, BRAND_NAME
 from prompts.blog_writer_prompt import (
     SYSTEM_PROMPT_NEWS, SYSTEM_PROMPT_PRODUCT,
     HUMAN_TEMPLATE_NEWS, HUMAN_TEMPLATE_PRODUCT,
@@ -138,7 +138,7 @@ def write_blog(state: BlogState) -> BlogState:
 # ── Node: validate_blog ───────────────────────────────────────────
 def validate_blog(state: BlogState) -> BlogState:
     """Basic structural quality check."""
-    print(f"[LangGraph] validate_blog")
+    print("[LangGraph] validate_blog")
 
     blog   = state["raw_blog"]
     issues = []
@@ -203,7 +203,7 @@ def _parse_blog(raw: str) -> dict:
 # ── Node: rag_validate ────────────────────────────────────────────
 def rag_validate(state: BlogState) -> BlogState:
     """RAG validation — fact-checks blog against embedded sources."""
-    print(f"[LangGraph] rag_validate")
+    print("[LangGraph] rag_validate")
 
     try:
         from agents.rag_validator import RAGValidator
@@ -246,7 +246,7 @@ def rag_validate(state: BlogState) -> BlogState:
 # ── Node: review_blog ─────────────────────────────────────────────
 def review_blog(state: BlogState) -> BlogState:
     """5-layer compliance review — tone, legal, brand, accuracy, policy."""
-    print(f"[LangGraph] review_blog")
+    print("[LangGraph] review_blog")
 
     try:
         reviewer = ReviewAgent()
@@ -314,7 +314,7 @@ def review_blog(state: BlogState) -> BlogState:
 def generate_images(state: BlogState) -> BlogState:
     """Generate blog/Instagram/LinkedIn images via Stability AI."""
     if not state.get("generate_images", False):
-        print(f"[LangGraph] generate_images — skipped (toggled off)")
+        print("[LangGraph] generate_images — skipped (toggled off)")
         return {**state, "images": {}}
 
     print(f"[LangGraph] generate_images — formats={state.get('image_formats')}")
@@ -339,7 +339,7 @@ def generate_social_posts(state: BlogState) -> BlogState:
     """Generate Instagram + LinkedIn posts with images and captions."""
     platforms = state.get("social_platforms", [])
     if not platforms:
-        print(f"[LangGraph] generate_social_posts — skipped (no platforms)")
+        print("[LangGraph] generate_social_posts — skipped (no platforms)")
         return {**state, "social_posts": {}}
 
     print(f"[LangGraph] generate_social_posts — {platforms}")
@@ -383,7 +383,7 @@ def run_localization(state: BlogState) -> BlogState:
     languages = state.get("target_languages", [])
     
     if not languages or not state.get("approved"):
-        print(f"[LangGraph] run_localization — skipped (no languages or not approved)")
+        print("[LangGraph] run_localization — skipped (no languages or not approved)")
         return {**state, "localized_content": {}}
 
     try:
@@ -411,7 +411,7 @@ def should_continue(state: BlogState) -> Literal["refine", "done"]:
         return "done"
 
     if state.get("human_feedback"):
-        print(f"[LangGraph] Human feedback detected — refining")
+        print("[LangGraph] Human feedback detected — refining")
         return "refine"
 
     if (state.get("review_verdict") in ("REJECTED", "NEEDS_FIX") or 

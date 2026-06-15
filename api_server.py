@@ -32,7 +32,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
-import os
 
 # ── Fix #9: all project imports at the top ───────────────────────────────────
 from job_store import job_store                         # Fix #1 (persistent store)

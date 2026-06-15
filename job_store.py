@@ -26,6 +26,9 @@ logger = logging.getLogger(__name__)
 
 TTL_HOURS = 2          # jobs older than this are auto-deleted
 
+from dotenv import load_dotenv
+load_dotenv()
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if os.getenv("VERCEL"):
@@ -59,9 +62,12 @@ class JobStore:
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
 
+            user = urllib.parse.unquote(url.username) if url.username else None
+            password = urllib.parse.unquote(url.password) if url.password else None
+
             conn = pg8000.connect(
-                user=url.username,
-                password=url.password,
+                user=user,
+                password=password,
                 host=url.hostname,
                 port=port,
                 database=database,

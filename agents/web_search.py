@@ -2,7 +2,6 @@ from tavily import TavilyClient
 from newsapi import NewsApiClient
 from config import TAVILY_API_KEY, NEWSAPI_KEY
 from datetime import datetime, timedelta
-import socket
 
 
 class WebSearchAgent:
@@ -37,8 +36,8 @@ class WebSearchAgent:
         print(f"\n[WebSearchAgent] Searching: '{topic}'")
         
         if not self.network_available:
-            print(f"[WebSearchAgent] ⚠️  Network access unavailable (firewall/restrictions)")
-            print(f"[WebSearchAgent] Using empty context. LLM will generate without web context.")
+            print("[WebSearchAgent] ⚠️  Network access unavailable (firewall/restrictions)")
+            print("[WebSearchAgent] Using empty context. LLM will generate without web context.")
             return {"context": "", "sources": [], "tavily_answer": ""}
 
         tavily_data, tavily_answer = self._search_tavily(topic, max_results)

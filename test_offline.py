@@ -37,7 +37,7 @@ try:
     print(f"Title:        {result.get('title', 'N/A')}")
     print(f"Reading time: {result.get('reading_time', 'N/A')}")
     print(f"Keywords:     {result.get('seo_keywords', [])}")
-    print(f"\nContent preview (first 300 chars):")
+    print("\nContent preview (first 300 chars):")
     print(result.get("content", "")[:300])
     print("\n" + "="*60)
     

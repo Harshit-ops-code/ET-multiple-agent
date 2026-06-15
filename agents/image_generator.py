@@ -457,7 +457,6 @@ class ImageGenerator:
         return ImageFont.load_default()
 
     def _create_fallback_image(self, prompt: str, fmt: str) -> dict:
-        from PIL import Image, ImageDraw, ImageFont
         spec = self.FORMATS.get(fmt, self.FORMATS["blog"])
         w, h = spec["width"], spec["height"]
         
@@ -491,7 +490,6 @@ class ImageGenerator:
         
         bbox_sm = draw.textbbox((0, 0), subtitle_text, font=font_sm)
         tw_sm = bbox_sm[2] - bbox_sm[0]
-        th_sm = bbox_sm[3] - bbox_sm[1]
         
         # Center title
         draw.text(((w - tw) // 2, (h // 2) - th - 10), title_text, font=font, fill=(255, 255, 255))

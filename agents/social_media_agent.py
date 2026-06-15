@@ -1,6 +1,5 @@
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 from agents.image_generator import ImageGenerator
 from prompts.social_media_prompt import (
     INSTAGRAM_NEWS_CAPTION,
@@ -12,7 +11,11 @@ from prompts.social_media_prompt import (
 from config import GROQ_API_KEY, GROQ_MODEL, BRAND_NAME, OUTPUT_DIR
 from agents.llm_fallback import run_llm_with_fallback
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
-import os, io, base64, textwrap, re
+import os
+import io
+import base64
+import textwrap
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
@@ -88,7 +91,8 @@ class SocialMediaAgent:
                     results[name] = payload
                 except Exception as e:
                     print(f"[SocialMediaAgent] {platform} error: {e}")
-                    import traceback; traceback.print_exc()
+                    import traceback
+                    traceback.print_exc()
                     results[platform] = {"error": str(e)}
 
         return results

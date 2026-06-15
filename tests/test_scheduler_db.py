@@ -9,8 +9,18 @@ def temp_job_store():
     fd, path = tempfile.mkstemp()
     os.close(fd)
     store = JobStore(db_path=path)
+    # Clear any leftover records
+    store._run_query("DELETE FROM jobs", commit=True)
+    store._run_query("DELETE FROM scheduled_posts", commit=True)
     yield store
-    os.remove(path)
+    # Clean up after test
+    store._run_query("DELETE FROM jobs", commit=True)
+    store._run_query("DELETE FROM scheduled_posts", commit=True)
+    if not store._use_postgres:
+        try:
+            os.remove(path)
+        except Exception:
+            pass
 
 def test_scheduled_posts(temp_job_store):
     store = temp_job_store

@@ -32,9 +32,12 @@ def _connect_postgres():
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
 
+    user = urllib.parse.unquote(url.username) if url.username else None
+    password = urllib.parse.unquote(url.password) if url.password else None
+
     conn = pg8000.connect(
-        user=url.username,
-        password=url.password,
+        user=user,
+        password=password,
         host=url.hostname,
         port=port,
         database=database,

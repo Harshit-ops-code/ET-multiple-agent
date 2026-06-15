@@ -1,5 +1,4 @@
 from agents.blog_writer import BlogWriterAgent
-from api_server import app
 
 def main():
     writer = BlogWriterAgent()

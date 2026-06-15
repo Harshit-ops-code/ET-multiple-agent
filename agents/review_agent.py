@@ -34,7 +34,7 @@ class ReviewAgent:
                 print(f"[ReviewAgent] Groq client unavailable: {e}")
 
     def review(self, content: str, mode: str, source_context: str = "") -> dict:
-        print(f"\n[ReviewAgent] Running 5-layer compliance review...")
+        print("\n[ReviewAgent] Running 5-layer compliance review...")
 
         raw = run_llm_with_fallback(
             prompt_template=self.prompt,
@@ -105,4 +105,4 @@ class ReviewAgent:
         if not m:
             return []
         lines = m.group(1).strip().split("\n")
-        return [l.lstrip("- •").strip() for l in lines if l.strip() and l.strip() != "-"]
+        return [line.lstrip("- •").strip() for line in lines if line.strip() and line.strip() != "-"]
