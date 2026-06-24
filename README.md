@@ -1,4 +1,4 @@
-# ET Multiple Agent
+# Lexis AI
 
 ET Multiple Agent is a multi-step AI content pipeline for generating articles, compliance audits, social media posts, AI-generated images, and post-approval parallel translations from a single modular web interface.
 
